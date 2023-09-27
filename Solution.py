@@ -3,6 +3,8 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 from Route import Route
+from Problem import Location, Customer, TWO_E_CVRP
+from random import Random
 
 
 class Solution:
@@ -11,29 +13,19 @@ class Solution:
 
     Attributes
     ----------
-    problem : 2E-CVR
-        the problem that corresponds to this solution
-    routes_1 : List of Routes
-         Routes for the first echelon vehicle in the current solution
-    routes_2 : List of Routes
-         Routes for the second echelon vehicle the current solution
-    served : List of Customers
-        Customers served in the second echelon vehicle current solution
-    notServed : List of Customers
-         Customers not served in the second echelon vehicle current solution
-    distance : double
-        total distance of the current solution
-    cost: double
-        total cost consisting of handling, distance and vehicle cost.
-    handling: double
-        total handling cost of loads at satellites
-    satDemandServed : List 
-        Load served in the first echelon vehicle current solution
-    satDemandNotServed : List 
-         Load not served in the first echelon vehicle current solution
+    problem : the problem that corresponds to this solution
+    routes_1 :  Routes for the first echelon vehicle in the current solution
+    routes_2 : Routes for the second echelon vehicle the current solution
+    served : Customers served in the second echelon vehicle current solution
+    notServed : Customers not served in the second echelon vehicle current solution
+    distance : total distance of the current solution
+    cost:  total cost consisting of handling, distance and vehicle cost.
+    handling:  total handling cost of loads at satellites
+    satDemandServed : Load served in the first echelon vehicle current solution
+    satDemandNotServed : Load not served in the first echelon vehicle current solution
     """
 
-    def __init__(self, problem, routes_2, served, notServed):
+    def __init__(self, problem: TWO_E_CVRP, routes_2: list[Route], served: list[Customer], notServed: list[Customer]):
 
         self.problem = problem
         self.routes_2 = routes_2
@@ -65,7 +57,7 @@ class Solution:
         # Calculate the total cost
         self.cost = handling + self.distance + vehicle_cost
                    
-    def __str__(self): 
+    def __str__(self)-> str: 
         """
         Method that prints the solution
         """
@@ -84,7 +76,7 @@ class Solution:
         
         return s
     
-    def executeRandomRemoval(self,nRemove,random, firstEchelon):
+    def executeRandomRemoval(self,nRemove: int, random: Random, firstEchelon: bool):
         """
         Method that executes a random removal of locations
         
@@ -92,14 +84,10 @@ class Solution:
 
         Parameters
         ----------
-        nRemove : int
-            number of customers that is removed.                 
-        randomGen : Random
-            Used to generate random numbers        
-        firstEchelon: Boolean
-            True if choose to remove location from the first-echelon routes
+        nRemove : number of customers that is removed.                 
+        randomGen :  Used to generate random numbers        
+        firstEchelon: True if choose to remove location from the first-echelon routes
             False otherwise
-
         """
         if firstEchelon is True:
             routes = self.routes_1
@@ -124,25 +112,17 @@ class Solution:
             loc = random.choice(route.locations[1:-1]) 
             self.removeLocation(loc, firstEchelon, route)
     
-    def removeLocation(self,location, firstEchelon, route):
+    def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
         """
         Method that removes a location from the indicated level of echelon vehicles
 
 
         Parameters
         ----------
-        location : Location
-            Location to be removed
-        firstEchelon : Boolean
-            True if choose to remove location from the first-echelon routes
+        location : Location to be removed
+        firstEchelon : True if choose to remove location from the first-echelon routes
             False otherwise        
-        route : Route
-            This is the route which have the location to be removed
-
-        Returns
-        -------
-        None.
-
+        route : This is the route which have the location to be removed
         """
         
         # Remove the location from the route
@@ -165,10 +145,6 @@ class Solution:
         """
         Generate a list of total demand for all satellites given the second echelon routes
 
-        Returns
-        -------
-        None.
-
         """
         # number of satellites
         nSat = len(self.problem.satellites)
@@ -179,7 +155,7 @@ class Solution:
             totalDemand = sum(j.demand for j in i.locations)
             self.satDemandNotServed[sat.nodeID - 1] += totalDemand
 
-    def executeRandomInsertion(self, randomGen):
+    def executeRandomInsertion(self, randomGen: Random):
         """
         Method that contruct randomly the routes for the first and second echelon vehicles by 
         1. randomly insert the customers to create the second echelon routes.
@@ -190,12 +166,7 @@ class Solution:
 
         Parameters
         ----------
-        randomGen : Random
-            Used to generate random numbers
-
-        Returns
-        -------
-        None.
+        randomGen : Used to generate random numbers
 
         """
         
@@ -203,7 +174,7 @@ class Solution:
         # Based on the second echelon routes, generate the first echelon routes
         self.executeRandomInsertionFirst(randomGen)
 
-    def executeRandomInsertionFirst(self,randomGen):
+    def executeRandomInsertionFirst(self,randomGen: Random):
         """
         Method that randomly inserts the demand of each satellite to construct the routes
         for the first echelon vehciles. Note that we assume given second-echelon routes
@@ -211,8 +182,7 @@ class Solution:
                 
         Parameters
         ----------
-        randomGen : Random
-            Used to generate random numbers
+        randomGen : Used to generate random numbers
 
         """
         # Determine the first echelon from the given-second echelon routes
@@ -268,14 +238,13 @@ class Solution:
             self.satDemandNotServed[sat_ID] -= load
             self.satDemandServed[sat_ID] += load
 
-    def executeRandomInsertionSecond(self, randomGen):
+    def executeRandomInsertionSecond(self, randomGen: Random):
         """
         Method that randomly inserts the unserved customers in the solution for the second echelon routes.
         
         Parameters
         ----------
-        randomGen : Random
-            Used to generate random numbers
+        randomGen : Used to generate random numbers
 
         """
         # iterate over the list with unserved customers

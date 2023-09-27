@@ -7,33 +7,6 @@ import numpy as np
 import math
 import sys
 
-
-class Customer:
-    """
-    Class that represents a customer with its location and nodeID
-
-    Attributes
-    ----------
-
-    deliveryLoc : Location
-        The delivery location.
-    ID : int
-        id of customer.
-
-    """
-
-    def __init__(self, deliveryLoc, ID):
-
-        self.deliveryLoc = deliveryLoc
-        self.ID = ID
-
-    def __str__(self):
-        """
-        Method that prints the customer ID and the delivery location
-        """
-        return f"({self.ID} ,{self.deliveryLoc})"
-
-
 class Location:
     """
     Class that represents either (i) a location where a customer should be delivered
@@ -76,38 +49,50 @@ class Location:
         dx = l1.xLoc-l2.xLoc
         dy = l1.yLoc-l2.yLoc
         return math.sqrt(dx**2+dy**2)
+
+
+class Customer:
+    """
+    Class that represents a customer with its location and nodeID
+
+    Attributes
+    ----------
+
+    deliveryLoc : The delivery location.
+    ID : id of customer.
+
+    """
+
+    def __init__(self, deliveryLoc: Location, ID: int):
+
+        self.deliveryLoc = deliveryLoc
+        self.ID = ID
+
+    def __str__(self):
+        """
+        Method that prints the customer ID and the delivery location
+        """
+        return f"({self.ID} ,{self.deliveryLoc})"
         
 class TWO_E_CVRP: 
     """
     Class that represents two-echelon capacitated vehicle routing problem
     Attributes
     ----------
-    name : string
-        name of the instance.
-    customers : List of customers
-        The set containing all customers.
-    customerLoc: List of Locations
-        The list of all customer locations
-    depot : Location
-        the depot where all the first-echelon vehicles must start and end.
-    satellites : Location
-        the satellites where all the second-echelon vehicles must start and end.
-    locations : Set of Locations
-        The set containing all locations: a depot, satellites and customers.
-    distMatrix : 2D array
-         matrix with all distances between locations
-    capacity_first : int
-        first-echelon vehicle capacity
-    cost_first : int
-        first-echelon vehicle cost
-    capacity_second : int
-        second-echelon vehicle capacity
-    cost_second : int
-        second-echelon vehicle cost
-    cost_handling : int
-        handling fee per transshiped unit at satellite     
+    name : name of the instance.
+    customers : The set containing all customers.
+    customerLoc: the list of all customer locations
+    depot : the depot where all the first-echelon vehicles must start and end.
+    satellites : the satellites where all the second-echelon vehicles must start and end.
+    locations : the set containing all locations: a depot, satellites and customers.
+    distMatrix : matrix with all distances between locations
+    capacity_first : first-echelon vehicle capacity
+    cost_first : first-echelon vehicle cost
+    capacity_second : second-echelon vehicle capacity
+    cost_second : second-echelon vehicle cost
+    cost_handling : handling fee per transshiped unit at satellite     
     """         
-    def __init__(self,name,customerLoc, depots, satellites, customers):
+    def __init__(self,name: str, customers: list[Customer], customerLoc: list[Location], depots: list[Location], satellites: list[Location]):
         self.name = name
         self.customerLoc = customerLoc
         self.depot = depots[0]
@@ -148,18 +133,12 @@ class TWO_E_CVRP:
     def __str__(self):
         return f" 2E-CVRP problem {self.name} with {len(self.customerLoc)} customers "
 
-    def readInstance(fileName):
-        """
-        Method that reads an instance from a file and returns the instances
-        """
-
+    def readInstance(fileName: str, dir: str = "Must") -> "TWO_E_CVRP":
         # Read filename
         instance_name = fileName[:-4]
-        instance_type = instance_name[0:3]
-        n_depots = int(instance_name[4])
         n_satellites = int(instance_name[6])
         n_customers = int(instance_name[8:])
-        f = open(f"Instances/{fileName}")
+        f = open(f"Instances/{dir}/{fileName}")
 
         n_line = 0  # count number of line
         nodeCount = 1  # count number of nodes
@@ -205,4 +184,4 @@ class TWO_E_CVRP:
                     depot.append(
                         Location(x, y, demand, servTime, typeLoc, nodeID))
                 n_line += 1
-        return TWO_E_CVRP(fileName, customerLoc, depot, satellites, customers)
+        return TWO_E_CVRP(fileName, customers, customerLoc, depot, satellites)

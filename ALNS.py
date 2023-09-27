@@ -3,7 +3,7 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 from Solution import Solution
-import random
+from random import Random
 import copy
 import time
 
@@ -45,7 +45,7 @@ class ALNS:
         self.problem = problem
         self.nDestroyOps = nDestroyOps
         self.nRepairOps = nRepairOps
-        self.randomGen = random.Random(Parameters.randomSeed) #used for reproducibility
+        self.randomGen = Random(Parameters.randomSeed) #used for reproducibility
         
     
     def constructInitialSolution(self):

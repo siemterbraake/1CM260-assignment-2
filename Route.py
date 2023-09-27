@@ -3,6 +3,7 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 import sys
+from Problem import Location, TWO_E_CVRP
 
 
 class Route:
@@ -12,34 +13,25 @@ class Route:
 
     Parameters
     ----------
-    locations : list of locations
-        the route sequence of locations for the vehicles. The first and last index correspond 
+    locations : the route sequence of locations for the vehicles. The first and last index correspond 
         to the depot for the first-echelon route and a satellite for the second-echelon route.
-    customers: list of customers
-        the set of customers served by the second echelon vehicle. Note the set will be empty for 
+    customers: the set of customers served by the second echelon vehicle. Note the set will be empty for 
         the first echelon vehicle route.
-    problem : 2E-VRP
-        the problem instance, used to compute distances.
-    feasible : boolean
-        true if route respects capacity and their corresponding orgins and destinations.
+    problem : the problem instance, used to compute distances.
+    feasible : true if route respects capacity and their corresponding orgins and destinations.
         For the first-echelon vehicles, the origins and destinations is the depot while it 
         is satellite for the second-echelon vehicles.
-    distance : int
-        total distance driven, extremely large number if infeasible
-    cost: int
-        total cost: first echelon include handling, distance cost and vehicle cost while the second echelon
+    distance : total distance driven, extremely large number if infeasible
+    cost: total cost: first echelon include handling, distance cost and vehicle cost while the second echelon
         only has the vehicle and distance cost.
-    servedLoad: list
-        store the load for each customer / satellite location(s) satisfied by the route
+    servedLoad: store the load for each customer / satellite location(s) satisfied by the route
         note that the position in the list correspond to the order of the locations
         for exmaple: locations: [1,2,3,1], servedLoad:[10,20]
         this means that the load of location 2 is 10 and load of location 3 is 20.
-    isFirstEchelonRoute: boolean
-        true if the route belongs to the first echelon.
+    isFirstEchelonRoute: true if the route belongs to the first echelon.
     """
 
-    def __init__(self, locations, problem, isFirstEchelonRoute, load):
-
+    def __init__(self, locations: list[Location], problem: TWO_E_CVRP, isFirstEchelonRoute: bool, load: list[int]):
         self.locations = locations
         self.customers = []
         self.problem = problem
@@ -56,7 +48,7 @@ class Route:
             self.distance = sys.maxsize  # extremely large number
             self.cost = sys.maxsize  # extremely large number
 
-    def computeDistance(self):
+    def computeDistance(self) -> float:
         """
         Method that computes and returns the distance of the route
         """
@@ -68,7 +60,7 @@ class Route:
             totDist += dist
         return totDist
 
-    def computeCost(self):    
+    def computeCost(self) -> float:    
         """
         Method that computes total cost = load handling cost + vehicle cost + transportation cost
 
@@ -90,7 +82,7 @@ class Route:
         
         return toCost 
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Method that prints the route
         """
@@ -101,7 +93,7 @@ class Route:
         s += f"load = {self.servedLoad}"
         return s
 
-    def isFeasible(self, load = 0):
+    def isFeasible(self) -> bool:
         """
         Method that checks feasbility. Returns True if feasible, else False
         """
@@ -127,20 +119,17 @@ class Route:
 
         return True
 
-    def removeLocation(self, location):
+    def removeLocation(self, location: Location) -> tuple[int, int]:
         """
         Method that removes a location from the route.
 
         Parameters
         ----------
-        location : Location
-            location to be removed.
+        location : location to be removed.
 
         Returns
         -------
-        location_index : int
-            the index of the location from the list of locations of this vehicle routes.
-
+        location_index :  the index of the location from the list of locations of this vehicle routes.
         """
         # get the index of the deliveryLoc
         location_index = 0
@@ -165,23 +154,20 @@ class Route:
 
         return location_index, load
 
-    def greedyInsert(self, location, load):
+    def greedyInsert(self, location: Location, load: int):
         """
         Method that inserts the location and corresponding load to a route
         that give the shortest total distance. Returns best route. 
 
         Parameters
         ----------
-        location : Location
-            customers or satellites location for insertion.
-        load : double
-            load for delivery.
+        location : customers or satellites location for insertion.
+        load : load for delivery.
 
         Returns
         -------
         bestInsert : Route
             Route after insertion.
-
         """
         minDist = sys.maxsize  # initialize as extremely large number
         bestInsert = None
