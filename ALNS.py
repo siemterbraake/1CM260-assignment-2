@@ -4,6 +4,7 @@
 """
 from Solution import Solution
 from random import Random
+from Problem import TWO_E_CVRP
 import copy
 import time
 
@@ -25,23 +26,16 @@ class ALNS:
 
     Parameters
     ----------
-    problem : TWO_E_CVRP
-        The problem instance that we want to solve.
-    nDestroyOps : int
-        number of destroy operators.
-    nRepairOps : int
-        number of repair operators.
-    randomGen : Random
-        random number generator
-    currentSolution : Solution
-        The current solution in the ALNS algorithm
-    bestSolution : Solution
-        The best solution currently found
-    bestCost : int
-        Cost of the best solution
+    problem : The problem instance that we want to solve.
+    nDestroyOps : number of destroy operators.
+    nRepairOps :  number of repair operators.
+    randomGen :  random number generator
+    currentSolution : The current solution in the ALNS algorithm
+    bestSolution : The best solution currently found
+    bestCost : Cost of the best solution
 
     """
-    def __init__(self,problem,nDestroyOps,nRepairOps):
+    def __init__(self,problem: TWO_E_CVRP, nDestroyOps: int, nRepairOps: int):
         self.problem = problem
         self.nDestroyOps = nDestroyOps
         self.nRepairOps = nRepairOps
@@ -110,7 +104,7 @@ class ALNS:
         """
         pass
     
-    def determineDestroyOpNr(self):
+    def determineDestroyOpNr(self) -> int:
         """
         Method that determines the destroy operator that will be applied. 
         Currently we just pick a random one with equal probabilities. 
@@ -118,7 +112,7 @@ class ALNS:
         """
         return self.randomGen.randint(1, self.nDestroyOps)
     
-    def determineRepairOpNr(self):
+    def determineRepairOpNr(self) -> int:
         """
         Method that determines the repair operator that will be applied. 
         Currently we just pick a random one with equal probabilities. 
@@ -128,19 +122,16 @@ class ALNS:
     
 
     
-    def destroyAndRepair(self,destroyHeuristicNr,repairHeuristicNr,sizeNBH):
+    def destroyAndRepair(self, destroyHeuristicNr: int, repairHeuristicNr: int, sizeNBH: int):
         """
         Method that performs the destroy and repair. More destroy and/or
         repair methods can be added
 
         Parameters
         ----------
-        destroyHeuristicNr : int
-            number of the destroy operator.
-        repairHeuristicNr : int
-            number of the repair operator.
-        sizeNBH : int
-            size of the neighborhood.
+        destroyHeuristicNr : number of the destroy operator.
+        repairHeuristicNr : number of the repair operator.
+        sizeNBH : size of the neighborhood.
 
         """
         #perform the destroy 
@@ -152,9 +143,9 @@ class ALNS:
             self.tempSolution.executeDestroyMethod3(sizeNBH)
         
         #perform the repair
-        if destroyHeuristicNr == 1:
+        if repairHeuristicNr == 1:
             self.tempSolution.executeRandomInsertion(self.randomGen)
-        elif destroyHeuristicNr == 2:
+        elif repairHeuristicNr == 2:
             self.tempSolution.executeRepairMethod2()
         else:
             self.tempSolution.executeRepairMethod3()
