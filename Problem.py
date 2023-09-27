@@ -4,75 +4,10 @@
 """
 
 import numpy as np
-import math
 import sys
-
-class Location:
-    """
-    Class that represents either (i) a location where a customer should be delivered
-    (ii) the depot for the first-echelon vehicles (iii) satellites for the second-echelon vehicles
-    Attributes
-    ----------
-    xLoc : int
-        x-coordinate.
-    yLoc : int
-        y-coordinate.
-    demand : int
-        demand quantity. For depot and satellites, demand is 0.
-    servTime : int
-        service time. (Extra. Don't consider in the problem)
-    typeLoc : int
-        1 if satellites, -1 if customers, 0 if depot
-    nodeID : int
-        id of the node, used for the distance matrix
-    """
-
-    def __init__(self, xLoc, yLoc, demand, servTime, typeLoc, nodeID):
-
-        self.xLoc = xLoc
-        self.yLoc = yLoc
-        self.demand = demand
-        self.servTime = servTime
-        self.typeLoc = typeLoc
-        self.nodeID = nodeID
-
-    def __str__(self):
-        """
-        Method that prints the location
-        """
-        return f"({self.nodeID} ,{self.typeLoc})"
-
-    def getDistance(l1,l2):
-        """
-        Method that computes the rounded euclidian distance between two locations
-        """
-        dx = l1.xLoc-l2.xLoc
-        dy = l1.yLoc-l2.yLoc
-        return math.sqrt(dx**2+dy**2)
-
-
-class Customer:
-    """
-    Class that represents a customer with its location and nodeID
-
-    Attributes
-    ----------
-
-    deliveryLoc : The delivery location.
-    ID : id of customer.
-
-    """
-
-    def __init__(self, deliveryLoc: Location, ID: int):
-
-        self.deliveryLoc = deliveryLoc
-        self.ID = ID
-
-    def __str__(self):
-        """
-        Method that prints the customer ID and the delivery location
-        """
-        return f"({self.ID} ,{self.deliveryLoc})"
+from ALNS import ALNS
+from Customer import Customer
+from Location import Location
         
 class TWO_E_CVRP: 
     """
@@ -185,3 +120,24 @@ class TWO_E_CVRP:
                         Location(x, y, demand, servTime, typeLoc, nodeID))
                 n_line += 1
         return TWO_E_CVRP(fileName, customers, customerLoc, depot, satellites)
+
+class ProblemSet:
+    """
+    Class that represents a set of problems
+    Attributes
+    ----------
+    problems : The set containing all problems.
+    """
+    def __init__(self, instanceList: list[str], dir: str = "Must"):
+        self.problems = list()
+        for instance in instanceList:
+            self.problems.append(TWO_E_CVRP.readInstance(instance, dir))
+    
+    def runALNS(self, nDestroyOps: int, nRepairOps: int):
+        """
+        Method that runs the ALNS algorithm for each problem in the set
+        """
+        for problem in self.problems:
+            alns = ALNS(problem, nDestroyOps, nRepairOps)
+            alns.execute()
+            print(alns.bestSolution)

@@ -3,7 +3,8 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 from Route import Route
-from Problem import Location, Customer, TWO_E_CVRP
+from Location import Location
+from Customer import Customer
 from random import Random
 
 
@@ -25,7 +26,7 @@ class Solution:
     satDemandNotServed : Load not served in the first echelon vehicle current solution
     """
 
-    def __init__(self, problem: TWO_E_CVRP, routes_2: list[Route], served: list[Customer], notServed: list[Customer]):
+    def __init__(self, problem, routes_2: list[Route], served: list[Customer], notServed: list[Customer]):
 
         self.problem = problem
         self.routes_2 = routes_2

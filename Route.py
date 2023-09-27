@@ -3,8 +3,7 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 import sys
-from Problem import Location, TWO_E_CVRP
-
+from Location import Location
 
 class Route:
     """
@@ -31,7 +30,7 @@ class Route:
     isFirstEchelonRoute: true if the route belongs to the first echelon.
     """
 
-    def __init__(self, locations: list[Location], problem: TWO_E_CVRP, isFirstEchelonRoute: bool, load: list[int]):
+    def __init__(self, locations: list[Location], problem, isFirstEchelonRoute: bool, load: list[int]):
         self.locations = locations
         self.customers = []
         self.problem = problem

@@ -4,7 +4,6 @@
 """
 from Solution import Solution
 from random import Random
-from Problem import TWO_E_CVRP
 import copy
 import time
 
@@ -35,7 +34,7 @@ class ALNS:
     bestCost : Cost of the best solution
 
     """
-    def __init__(self,problem: TWO_E_CVRP, nDestroyOps: int, nRepairOps: int):
+    def __init__(self,problem, nDestroyOps: int, nRepairOps: int):
         self.problem = problem
         self.nDestroyOps = nDestroyOps
         self.nRepairOps = nRepairOps
