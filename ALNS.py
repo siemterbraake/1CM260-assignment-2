@@ -28,6 +28,8 @@ class ALNS:
     problem : The problem instance that we want to solve.
     nDestroyOps : number of destroy operators.
     nRepairOps :  number of repair operators.
+    wDestroyOps : weight of destroy operator.
+    wRepairOps : weight of repair operator.
     randomGen :  random number generator
     currentSolution : The current solution in the ALNS algorithm
     bestSolution : The best solution currently found
@@ -38,9 +40,11 @@ class ALNS:
         self.problem = problem
         self.nDestroyOps = nDestroyOps
         self.nRepairOps = nRepairOps
+        self.wDestroyOps = [1]*nDestroyOps #initially all destroy operators have weight 1
+        self.wRepairOps = [1]*nRepairOps #initially all repair operators have weight 1
+        self.wLambda = 0.5 #parameter that controls the sensitivity of the weights
         self.randomGen = Random(Parameters.randomSeed) #used for reproducibility
         
-    
     def constructInitialSolution(self):
         """
         Method that constructs an initial solution using random insertion
@@ -74,9 +78,9 @@ class ALNS:
             self.tempSolution.computeCost()
             print("Iteration "+str(i)+": Found solution with cost: "+str(self.tempSolution.cost))
             #determine if the new solution is accepted
-            self.checkIfAcceptNewSol()
+            score = self.checkIfAcceptNewSol()
             #update the ALNS weights
-            self.updateWeights()
+            self.updateWeights(destroyOpNr, repairOpNr, score)
         endtime = time.time() # get the end time
         cpuTime = round(endtime-starttime)
 
@@ -85,6 +89,10 @@ class ALNS:
     def checkIfAcceptNewSol(self):
         """
         Method that checks if we accept the newly found solution
+
+        Returns
+        -------
+        score: 0 if we reject the solution, 1 if we accept the solution, 2 if we accept the solution and it is the new global best solution
         """
         # if we found a global best solution, we always accept
         if self.tempSolution.cost < self.bestCost:
@@ -92,16 +100,26 @@ class ALNS:
             self.bestSolution = copy.deepcopy(self.tempSolution)
             self.currentSolution = copy.deepcopy(self.tempSolution)
             print("Found new global best solution.")
+            score = 2
+            return score
         
         # currently, we only accept better solutions, no simulated annealing
         if self.tempSolution.cost<self.currentSolution.cost:
             self.currentSolution = copy.deepcopy(self.tempSolution)
+            score = 1
+            return score
+        
+        # if we did not accept the new solution, we do not update the current solution
+        score = 0
+        return score
     
-    def updateWeights(self):
+    def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.95):
         """
         Method that updates the weights of the destroy and repair operators
         """
-        pass
+        self.wDestroyOps[destroyOpNr-1] = self.wLambda*self.wDestroyOps[destroyOpNr-1] + (1-self.wLambda)*score
+        self.wRepairOps[repairOpNr-1] = self.wLambda*self.wRepairOps[repairOpNr-1] + (1-self.wLambda)*score
+        self.wLambda = self.wLambda*decay #update the lambda parameter
     
     def determineDestroyOpNr(self) -> int:
         """
@@ -109,7 +127,7 @@ class ALNS:
         Currently we just pick a random one with equal probabilities. 
         Could be extended with weights
         """
-        return self.randomGen.randint(1, self.nDestroyOps)
+        return self.randomGen.choices(range(1,self.nDestroyOps+1),weights=self.wDestroyOps,k=1)[0]
     
     def determineRepairOpNr(self) -> int:
         """
@@ -117,7 +135,7 @@ class ALNS:
         Currently we just pick a random one with equal probabilities. 
         Could be extended with weights
         """
-        return self.randomGen.randint(1, self.nRepairOps)
+        return self.randomGen.choices(range(1,self.nRepairOps+1),weights=self.wRepairOps,k=1)[0]
     
     def destroyAndRepair(self, destroyHeuristicNr: int, repairHeuristicNr: int, sizeNBH: int):
         """
