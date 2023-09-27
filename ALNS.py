@@ -69,7 +69,7 @@ class ALNS:
             destroyOpNr = self.determineDestroyOpNr()
             repairOpNr = self.determineRepairOpNr()
             #execute the destroy and the repair and evaluate the result
-            self.destroyAndRepair(destroyOpNr, repairOpNr, sizeNBH);
+            self.destroyAndRepair(destroyOpNr, repairOpNr, sizeNBH)
             # Determine the first echelon route using the Greedy insertion
             self.tempSolution.computeCost()
             print("Iteration "+str(i)+": Found solution with cost: "+str(self.tempSolution.cost))
@@ -118,8 +118,6 @@ class ALNS:
         Could be extended with weights
         """
         return self.randomGen.randint(1, self.nRepairOps)
-    
-
     
     def destroyAndRepair(self, destroyHeuristicNr: int, repairHeuristicNr: int, sizeNBH: int):
         """
