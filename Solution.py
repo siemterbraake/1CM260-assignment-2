@@ -192,7 +192,7 @@ class Solution:
         # Derive demands for satellites
         self.computeDemandSatellites()
         # iterate over the list with unserved customers
-        self.satDemandServed = [0 for i in range(len(self.satDemandNotServed))]
+        self.satDemandServed = [0]*range(len(self.satDemandNotServed))
         while sum(self.satDemandNotServed) > 0:
             #pick a satellite with some loads for the first echelon vehicle to deliver
             load_max = 0
