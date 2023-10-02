@@ -94,7 +94,7 @@ class Solution:
             routes = self.routes_1
         else:
             routes = self.routes_2
-        for i in range(nRemove):
+        for _ in range(nRemove):
             # terminate if no more customers/loads are served
             if len(routes)==0: 
                 break
@@ -112,7 +112,7 @@ class Solution:
                 break
             loc = random.choice(route.locations[1:-1]) 
             self.removeLocation(loc, firstEchelon, route)
-    
+
     def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
         """
         Method that removes a location from the indicated level of echelon vehicles
@@ -127,7 +127,7 @@ class Solution:
         """
         
         # Remove the location from the route
-        location_index, load = route.removeLocation(location)
+        _ , load = route.removeLocation(location)
         if firstEchelon is True:
             # update lists with served and unserved load
             self.satDemandServed[location.nodeID - 1] -= load
