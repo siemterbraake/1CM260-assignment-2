@@ -113,6 +113,12 @@ class Solution:
             loc = random.choice(route.locations[1:-1]) 
             self.removeLocation(loc, firstEchelon, route)
 
+    def executeWorstRemoval():
+        """
+
+        """
+        pass
+
     def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
         """
         Method that removes a location from the indicated level of echelon vehicles
