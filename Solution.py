@@ -108,10 +108,30 @@ class Solution:
                 # All routes are empty: no served loads or customers
                 if sum(len_route) == 2 * len(routes):
                     break
-            if len(route.locations) == 2:
+            if len(route.locations) == 2: #Includes the satellite locations therefore we break
                 break
             loc = random.choice(route.locations[1:-1]) 
             self.removeLocation(loc, firstEchelon, route)
+
+    def executeRelatedRemoval(self, nRemove:int, random: Random, firstEchelon: bool):
+        """
+        Method that executes the related removal of locations around a random location
+
+        This is destroy method number 2 in the ALNS
+
+        Parameters
+        ----------
+        nRemove : number of customers that is removed.                 
+        randomGen :  Used to generate random numbers        
+        firstEchelon: True if choose to remove location from the first-echelon routes
+            False otherwise
+        """
+        if firstEchelon is True:
+            routes = self.routes_1
+        else:
+            routes = self.routes_2
+        
+
 
     def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
         """
