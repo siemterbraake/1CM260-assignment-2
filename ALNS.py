@@ -177,7 +177,7 @@ class ALNS:
         if destroyHeuristicNr == 1:
             self.tempSolution.executeRandomRemoval(sizeNBH,self.randomGen, False)
         elif destroyHeuristicNr == 2:
-            self.tempSolution.executeDestroyMethod2(sizeNBH)
+            self.tempSolution.executeRelatedRemoval(sizeNBH,self.randomGen, False)
         else:
             self.tempSolution.executeDestroyMethod3(sizeNBH)
         tDestroy = time.perf_counter()-startTime_destroy

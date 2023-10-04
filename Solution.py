@@ -6,6 +6,7 @@ from Route import Route
 from Location import Location
 from Customer import Customer
 from random import Random
+import numpy as np
 
 
 class Solution:
@@ -132,17 +133,17 @@ class Solution:
             routes = self.routes_2
         while True: # Randomly choose a route
             route = random.choice(routes)
-            if len(route) > 2:
+            if len(route.locations) > 2:
                 break
         main_loc = random.choice(route.locations[1:-1]) # Choose random location from the random route
         self.removeLocation(main_loc, firstEchelon, route) # Remove the random location
         removing = []
-        removing_min = np.inf
+        removing_max = np.inf
         for i in self.served:
             if self.served.index(i) == 2:
-                removing_min = min([z[0] for z in removing])
-            dist = Location.getDistance(main_loc, i)
-            if dist < removing_min:
+                removing_max = max([z[0] for z in removing])
+            dist = Location.getDistance(main_loc, i.deliveryLoc)
+            if dist < removing_max:
                 removing.append((dist, i))
                 if len(removing) > nRemove:
                     removing_max = max([z[0] for z in removing])
@@ -150,7 +151,11 @@ class Solution:
                         if z[0] == removing_max:
                             removing.remove(z)
         for i in removing:
-            self.removeLocation(i, firstEchelon)
+            k = i[1].deliveryLoc
+            for j in routes:
+                if k in j.locations:
+                    route = j
+            self.removeLocation(k, firstEchelon, route)
                 
 
 
