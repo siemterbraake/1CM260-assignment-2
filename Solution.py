@@ -2,6 +2,7 @@
 """
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
+from copy import deepcopy
 from Route import Route
 from Location import Location
 from Customer import Customer
@@ -283,3 +284,118 @@ class Solution:
             # update the lists with served and notServed customers
             self.served.append(cust)
             self.notServed.remove(cust)
+
+    def executeGreedyInsertion(self):
+        """
+        Method that contruct the routes for the first and second echelon vehicles by Greedy insertion. 
+        First, we insert the customers to create the second echelon routes.
+        Second, depending on the constructed second echelon routes, insert demand at the
+        satellites to construct the first echelon routes.
+        
+        This is repair method number 2 in the ALNS
+        """
+        self.executeGreedyInsertionSecond()
+        # Based on the second echelon routes, generate the first echelon routes
+        self.executeGreedyInsertionFirst()
+
+    def executeGreedyInsertionFirst(self):
+        """
+        Method that performs Greedy insertion to construct the first-level routes.
+
+        """
+        pass
+
+    def executeGreedyInsertionSecond(self):
+        """
+        Method that performs Greedy insertion to construct the second-level routes
+        based on the first-level routes.
+
+        """
+        # keep track of routes in which customers could be inserted
+        costInsert= []
+        potentialRoutes = self.routes_2.copy()
+        lenRoute = [i.cost for i in potentialRoutes]
+
+        # iterate over the list with unserved customers
+        for cust in self.notServed:
+            cost = []
+            for iRoute in range(len(potentialRoutes)):
+                afterInsertion = potentialRoutes[iRoute].greedyInsert(
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
+                if afterInsertion is not None:
+                    cost.append(afterInsertion.cost-lenRoute[iRoute])
+                else:
+                    cost.append(float('inf'))
+
+            # append the customer and the route with the minimum cost
+            costInsert.append((cust,cost.index(min(cost)),min(cost)))
+
+        while len(self.notServed) > 0:
+            # find the customer with the minimum cost
+            minCost = min(costInsert, key=lambda x: x[2])
+            cust = minCost[0]
+
+            if minCost[2] == float('inf'):
+                # create a new route with the customer
+                nSat = len(self.problem.satellites)
+                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
+                sat = self.problem.satellites[iSat]
+                locList = [sat, cust.deliveryLoc, sat]
+                potentialRoutes.append(Route(locList, self.problem, False, [cust.deliveryLoc.demand]))
+                potentialRoutes[-1].customers = {cust}
+                iInsert = len(potentialRoutes) - 1
+                                    
+            else:
+                iInsert = minCost[1]
+                route = potentialRoutes[iInsert]
+                # insert the customer to the route with the minimum cost
+                afterInsertion = route.greedyInsert(
+                        cust.deliveryLoc, cust.deliveryLoc.demand)
+                afterInsertion.customers = route.customers
+                afterInsertion.customers.add(cust)
+                potentialRoutes[minCost[1]] =  deepcopy(afterInsertion)
+
+            # update the lists with served and notServed customers
+            self.notServed.remove(cust)
+            # remove all other entries for this customer
+            costInsert = list(filter(lambda x: x[0] != cust, costInsert))
+            # remove all entries for this route
+            costInsert = list(filter(lambda x: x[1] != minCost[1], costInsert))
+
+            # recalc the costInsert (only the routes that have been changed)
+            route = potentialRoutes[iInsert]
+            for cust in self.notServed:
+                afterInsertion = route.greedyInsert(
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
+                if afterInsertion is not None:
+                    cost = afterInsertion.distance
+                else:
+                    cost = float('inf')
+                costInsert.append((cust,iInsert,cost))
+
+    def executeRegretInsertion(self):
+        """
+        Method that contruct the routes for the first and second echelon vehicles by regret-2 insertion. 
+        First, we insert the customers to create the second echelon routes.
+        Second, depending on the constructed second echelon routes, insert demand at the
+        satellites to construct the first echelon routes.
+        
+        This is repair method number 3 in the ALNS
+        """
+        self.executeRegretInsertionSecond()
+        # Based on the second echelon routes, generate the first echelon routes
+        self.executeRegretInsertionFirst()
+
+    def executeRegretInsertionFirst(self):
+        """
+        Method that performs regret-2 insertion to construct the first-level routes.
+
+        """
+        pass
+
+    def executeRegretInsertionSecond(self):
+        """
+        Method that performs regret-2 insertion to construct the second-level routes
+        based on the first-level routes.
+
+        """

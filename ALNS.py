@@ -185,11 +185,12 @@ class ALNS:
         #perform the repair
         startTime_repair = time.perf_counter() # precision timing
         if repairHeuristicNr == 1:
-            self.tempSolution.executeRandomInsertion(self.randomGen)
+            self.tempSolution.executeGreedyInsertion()
+            # self.tempSolution.executeRandomInsertion(self.randomGen)
         elif repairHeuristicNr == 2:
-            self.tempSolution.executeRepairMethod2()
+            self.tempSolution.executeGreedyInsertion()
         else:
-            self.tempSolution.executeRepairMethod3()
+            self.tempSolution.executeRegretInsertion()
         tRepair = time.perf_counter()-startTime_repair
 
         #store average perform times (iterative expression)
