@@ -130,7 +130,28 @@ class Solution:
             routes = self.routes_1
         else:
             routes = self.routes_2
-        
+        while True: # Randomly choose a route
+            route = random.choice(routes)
+            if len(route) > 2:
+                break
+        main_loc = random.choice(route.locations[1:-1]) # Choose random location from the random route
+        self.removeLocation(main_loc, firstEchelon, route) # Remove the random location
+        removing = []
+        removing_min = np.inf
+        for i in self.served:
+            if self.served.index(i) == 2:
+                removing_min = min([z[0] for z in removing])
+            dist = Location.getDistance(main_loc, i)
+            if dist < removing_min:
+                removing.append((dist, i))
+                if len(removing) > nRemove:
+                    removing_max = max([z[0] for z in removing])
+                    for z in removing:
+                        if z[0] == removing_max:
+                            removing.remove(z)
+        for i in removing:
+            self.removeLocation(i, firstEchelon)
+                
 
 
     def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
