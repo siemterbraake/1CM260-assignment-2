@@ -179,7 +179,7 @@ class ALNS:
         elif destroyHeuristicNr == 2:
             self.tempSolution.executeRelatedRemoval(sizeNBH,self.randomGen, False)
         else:
-            self.tempSolution.executeDestroyMethod3(sizeNBH)
+            self.tempSolution.executeWorstRemoval(sizeNBH,self.randomGen, False)
         tDestroy = time.perf_counter()-startTime_destroy
 
         #perform the repair
