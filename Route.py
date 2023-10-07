@@ -65,7 +65,7 @@ class Route:
 
         """
         # Calculate the distance
-        # self.distance = self.computeDistance()
+        self.distance = self.computeDistance()
         toCost = 0
         handling = 0    
         # Calculate the handling cost

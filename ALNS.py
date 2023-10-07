@@ -12,9 +12,9 @@ class Parameters:
     """
     Class that holds all the parameters for ALNS
     """
-    nIterations = 10  # number of iterations of the ALNS
+    nIterations = 100  # number of iterations of the ALNS
     minSizeNBH = 1  # minimum neighborhood size
-    maxSizeNBH = 45  # maximum neighborhood size
+    maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
     # can add parameters such as cooling rate etc.
 
@@ -84,7 +84,7 @@ class ALNS:
             self.tempSolution.computeCost()
             print("Iteration "+str(i)+": Found solution with cost: "+str(self.tempSolution.cost))
             #determine if the new solution is accepted
-            score = self.checkIfAcceptNewSol()
+            score = self.checkIfAcceptNewSol(i)
             #update the ALNS weights
             self.updateWeights(destroyOpNr, repairOpNr, score)
             #update the time and number of uses of the operators
@@ -96,7 +96,7 @@ class ALNS:
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
     
-    def checkIfAcceptNewSol(self):
+    def checkIfAcceptNewSol(self, i: int):
         """
         Method that checks if we accept the newly found solution
 
@@ -106,6 +106,7 @@ class ALNS:
         """
         # if we found a global best solution, we always accept
         if self.tempSolution.cost < self.bestCost:
+            self.tempSolution.plotRoutes(f"ALNS Iteration {i}")
             self.bestCost = self.tempSolution.cost
             self.bestSolution = copy.deepcopy(self.tempSolution)
             self.currentSolution = copy.deepcopy(self.tempSolution)
@@ -185,12 +186,11 @@ class ALNS:
         #perform the repair
         startTime_repair = time.perf_counter() # precision timing
         if repairHeuristicNr == 1:
-            self.tempSolution.executeGreedyInsertion()
-            # self.tempSolution.executeRandomInsertion(self.randomGen)
+            self.tempSolution.executeRandomInsertion(self.randomGen)
         elif repairHeuristicNr == 2:
             self.tempSolution.executeGreedyInsertion()
         else:
-            self.tempSolution.executeRegretInsertion()
+            self.tempSolution.executeExpensiveInsertion()
         tRepair = time.perf_counter()-startTime_repair
 
         #store average perform times (iterative expression)

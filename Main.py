@@ -8,6 +8,6 @@ from Setup import instanceList
 
 if __name__ == "__main__":
     nDestroyOps = 1
-    nRepairOps = 1
+    nRepairOps = 3
     problemSet = ProblemSet(instanceList)
     problemSet.runALNS(nDestroyOps, nRepairOps)
