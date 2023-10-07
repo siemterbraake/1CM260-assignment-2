@@ -288,23 +288,20 @@ class Solution:
             self.served.append(cust)
             self.notServed.remove(cust)
 
-    def executeGreedyInsertion(self):
+    def executeGreedyInsertion(self, randomGen: Random, pertubation: bool):
         """
-        Method that contruct the routes for the first and second echelon vehicles by Greedy insertion. 
-        First, we insert the customers to create the second echelon routes.
-        Second, depending on the constructed second echelon routes, insert demand at the
+        Method that contruct the routes for the first and second echelon vehicles by
+        1. Greedy insertion to create the second echelon routes.
+        2. depending on the constructed second echelon routes, insert demand at the
         satellites to construct the first echelon routes.
-        
-        This is repair method number 2 in the ALNS
-        """
-        self.executeGreedyInsertionSecond()
+        """	
+        self.executeGreedyInsertionSecond(randomGen, pertubation)
         # Based on the second echelon routes, generate the first echelon routes
-        self.executeGreedyInsertionFirst()
+        self.executeGreedyInsertionFirst(randomGen, pertubation)
 
-    def executeGreedyInsertionFirst(self):
+    def executeGreedyInsertionFirst(self, randomGen: Random, perturbation: bool):
         """
         Method that performs Greedy insertion to construct the first-level routes.
-
         """
         # Determine the first echelon from the given-second echelon routes
         # This is used to reset the existing first-echelon route.
@@ -350,145 +347,52 @@ class Solution:
                     self.routes_1.append(afterInsertion)
                     # update the demand
                     self.satDemandNotServed[curCity-1] -= load
-                    self.satDemandServed[curCity-1] += load    
+                    self.satDemandServed[curCity-1] += load 
 
-    def executeGreedyInsertionSecond(self):
+    def executeGreedyInsertionSecond(self, randomGen: Random, pertubation: bool):
         """
         Method that performs Greedy insertion to construct the second-level routes
-        based on the first-level routes.
-        """
-        # keep track of routes in which customers could be inserted
-        costInsert= []
-        potentialRoutes = self.routes_2.copy()
-
-        if len(potentialRoutes) == 0:
-            locList = [self.problem.depot, self.problem.depot]
-            potentialRoutes.append(Route(locList, self.problem, False, []))
-
-        # compute the cost of the routes (out of date due to destroy)
-        for route in potentialRoutes:
-            route.computeCost()
-        # compute the cost of the routes
-        routeCost = [i.cost for i in potentialRoutes]
-
-        # iterate over the list with unserved customers
-        for cust in self.notServed:
-            cost = []
-            for iRoute in range(len(potentialRoutes)):
-                afterInsertion = potentialRoutes[iRoute].greedyInsert(
-                    cust.deliveryLoc, cust.deliveryLoc.demand)
-                if afterInsertion is not None:
-                    cost.append(afterInsertion.cost-routeCost[iRoute])
-                else:
-                    cost.append(float('inf'))
-
-            # append the customer and the route with the minimum cost
-            costInsert.append((cust,cost.index(min(cost)),min(cost)))
-
-        while len(self.notServed) > 0:
-            # find the customer with the minimum cost
-            minCost = min(costInsert, key=lambda x: x[2])
-            cust = minCost[0]
-
-            if minCost[2] == float('inf'):
-                # create a new route with the customer
-                nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
-                sat = self.problem.satellites[iSat]
-                locList = [sat, cust.deliveryLoc, sat]
-                potentialRoutes.append(Route(locList, self.problem, False, [cust.deliveryLoc.demand]))
-                potentialRoutes[-1].customers = {cust}
-                iInsert = len(potentialRoutes) - 1
-                                    
-            else:
-                iInsert = minCost[1]
-                route = potentialRoutes[iInsert]
-                # insert the customer to the route with the minimum cost
-                afterInsertion = route.greedyInsert(
-                        cust.deliveryLoc, cust.deliveryLoc.demand)
-                afterInsertion.customers = route.customers
-                afterInsertion.customers.add(cust)
-                potentialRoutes[minCost[1]] =  deepcopy(afterInsertion)
-
-            # update the lists with served and notServed customers
-            self.notServed.remove(cust)
-            self.served.append(cust)
-            # remove all other entries for this customer
-            costInsert = list(filter(lambda x: x[0] != cust, costInsert))
-            # remove all entries for this route
-            costInsert = list(filter(lambda x: x[1] != minCost[1], costInsert))
-
-            # recalc the costInsert (only the routes that have been changed)
-            route = potentialRoutes[iInsert]
-            route.computeCost() # inefficient, but easy
-            for cust in self.notServed:
-                afterInsertion = route.greedyInsert(
-                    cust.deliveryLoc, cust.deliveryLoc.demand)
-                if afterInsertion is not None:
-                    cost = afterInsertion.distance
-                else:
-                    cost = float('inf')
-                costInsert.append((cust,iInsert,cost))
-        
-        # update the routes
-        self.routes_2 = potentialRoutes
-
-    def executeExpensiveInsertion(self):
-        """
-        Method that contruct the routes for the first and second echelon vehicles by
-        1. Expensive insertion to create the second echelon routes.
-        2. depending on the constructed second echelon routes, insert demand at the
-        satellites to construct the first echelon routes.
-        """	
-        self.executeExpensiveInsertionSecond()
-        # Based on the second echelon routes, generate the first echelon routes
-        self.executeGreedyInsertionFirst()
-
-    def executeExpensiveInsertionSecond(self):
-        """
-        Method that performs Greedy expensive insertion to construct the second-level routes
         """
         self.served = list(set(self.problem.customers) - set(self.notServed))
         servedId = [i.ID for i in self.served]
 
         while len(self.notServed) > 0:
-            # find the unserved customer furthest away from the served customers
-            maxDist = 0
-            for cust in self.notServed:
-                dist = self.problem.distMatrix[cust.ID][servedId].min()
-                if dist > maxDist:
-                    maxDist = dist
-                    furthestCust = cust
+            # select a random unserved customer
+            cust = randomGen.choice(self.notServed)
             
             # Find the route where a Greedy insertion is the cheapest
             costInsert = []
             for route in self.routes_2:
                 afterInsertion = route.greedyInsert(
-                    furthestCust.deliveryLoc, furthestCust.deliveryLoc.demand)
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
                 if afterInsertion is not None:
                     cost = afterInsertion.cost-route.cost
                 else:
                     cost = float('inf')
+                if pertubation:
+                    cost += cost*randomGen.uniform(-0.2, 0.2)
                 costInsert.append(cost)
             
             # Find the route with the minimum cost and insert the customer
+            if len(costInsert) == 0:
+                costInsert = [float('inf')]
+                
             iInsert = costInsert.index(min(costInsert))
             if costInsert[iInsert] == float('inf'):
                 # create a new route with the customer
                 nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[furthestCust.ID][:nSat].argmin()
+                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
                 sat = self.problem.satellites[iSat]
-                locList = [sat, furthestCust.deliveryLoc, sat]
-                self.routes_2.append(Route(locList, self.problem, False, [furthestCust.deliveryLoc.demand]))
-                self.routes_2[-1].customers = {furthestCust}
+                locList = [sat, cust.deliveryLoc, sat]
+                self.routes_2.append(Route(locList, self.problem, False, [cust.deliveryLoc.demand]))
+                self.routes_2[-1].customers = {cust}
             else:
                 self.routes_2[iInsert] = self.routes_2[iInsert].greedyInsert(
-                    furthestCust.deliveryLoc, furthestCust.deliveryLoc.demand)                
+                    cust.deliveryLoc, cust.deliveryLoc.demand)                
             # update the lists with served and notServed customers
-            self.notServed.remove(furthestCust)
-            self.served.append(furthestCust)
-            servedId.append(furthestCust.ID)        
-
+            self.notServed.remove(cust)
+            self.served.append(cust)
+            servedId.append(cust.ID)        
 
     def executeRegretInsertion(self):
         """
