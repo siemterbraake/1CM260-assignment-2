@@ -188,5 +188,46 @@ class Route:
                     bestInsert = afterInsertion
                     minDist = afterInsertion.distance
         return bestInsert
+    
+    def findRegret(self, location: Location, load: int) -> tuple[float, float]:
+        """
+        Method that find the regret value for the location and corresponding load to a route
+
+        Parameters
+        ----------
+        location : customers or satellites location for insertion.
+        load : load for delivery.
+
+        Returns
+        -------
+        bestCost : the cost of the best insertion
+        secondbestCost : the cost of the second best insertion
+        """
+        curCost = self.cost
+        bestCost = 1_000_000_000
+        secondbestCost = 1_000_000_000
+        bestRoute = None
+        # return None if empty is sent.
+        if load <= 0:
+            return bestCost-curCost, secondbestCost-curCost, bestRoute
+        # iterate over all possible insertion positions
+        for i in range(1, len(self.locations)):
+            locationsCopy = self.locations.copy()
+            demandCopy = self.servedLoad.copy()
+            # update demand
+            demandCopy.insert(i-1, load)
+            locationsCopy.insert(i, location)
+            afterInsertion = Route(locationsCopy, self.problem, self.isFirstEchelonRoute, demandCopy)
+            # check if insertion is feasible
+            if afterInsertion.isFeasible():
+                # check if cheapest
+                if afterInsertion.cost < bestCost:
+                    secondbestCost = bestCost
+                    bestCost = afterInsertion.cost
+                    bestRoute = afterInsertion
+                elif afterInsertion.cost < secondbestCost:
+                    secondbestCost = afterInsertion.cost
+        return bestCost-curCost, secondbestCost-curCost, bestRoute
+
 
     
