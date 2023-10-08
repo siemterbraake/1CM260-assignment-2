@@ -95,6 +95,7 @@ class ALNS:
         cpuTime = round(endtime-starttime)
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
+        print(f"Time for the repair operators: {self.tRepairOps}. Weights for the repair operators: {self.wRepairOps}")
     
     def checkIfAcceptNewSol(self, i: int):
         """
@@ -124,13 +125,17 @@ class ALNS:
         score = 0
         return score
     
-    def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.95):
+    def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.99):
         """
         Method that updates the weights of the destroy and repair operators
         """
         self.wDestroyOps[destroyOpNr-1] = self.wLambda*self.wDestroyOps[destroyOpNr-1] + (1-self.wLambda)*score
         self.wRepairOps[repairOpNr-1] = self.wLambda*self.wRepairOps[repairOpNr-1] + (1-self.wLambda)*score
         self.wLambda = self.wLambda*decay #update the lambda parameter
+
+        self.wDestroyOps = [i/sum(self.wDestroyOps) for i in self.wDestroyOps] #normalize the weights
+        self.wRepairOps = [i/sum(self.wRepairOps) for i in self.wRepairOps] #normalize the weights
+
     
     def determineDestroyOpNr(self) -> int:
         """

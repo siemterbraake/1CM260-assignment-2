@@ -359,6 +359,7 @@ class Solution:
         while len(self.notServed) > 0:
             # select a random unserved customer
             cust = randomGen.choice(self.notServed)
+            inserted = False
             
             # Find the route where a Greedy insertion is the cheapest
             costInsert = []
@@ -367,26 +368,34 @@ class Solution:
                     cust.deliveryLoc, cust.deliveryLoc.demand)
                 if afterInsertion is not None:
                     cost = afterInsertion.cost-route.cost
+                    if pertubation:
+                        cost += cost*randomGen.uniform(-0.2, 0.2)
                 else:
                     cost = float('inf')
-                if pertubation:
-                    cost += cost*randomGen.uniform(-0.2, 0.2)
                 costInsert.append(cost)
             
             # Find the route with the minimum cost and insert the customer
             if len(costInsert) == 0:
                 costInsert = [float('inf')]
-                
-            iInsert = costInsert.index(min(costInsert))
-            if costInsert[iInsert] == float('inf'):
+
+            # Find the minimum cost
+            minCost = min(costInsert)
+
+            # If the cost is higher than the cost of opening a new rout, consider a new route
+            if minCost > self.problem.cost_second:   
                 # create a new route with the customer
                 nSat = len(self.problem.satellites)
                 iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
-                self.routes_2.append(Route(locList, self.problem, False, [cust.deliveryLoc.demand]))
-                self.routes_2[-1].customers = {cust}
-            else:
+                newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
+                newRoute.customers = {cust}	
+                if newRoute.cost < minCost:
+                    self.routes_2.append(newRoute)
+                    inserted = True
+
+            if not inserted:
+                iInsert = costInsert.index(minCost)
                 self.routes_2[iInsert] = self.routes_2[iInsert].greedyInsert(
                     cust.deliveryLoc, cust.deliveryLoc.demand)                
             # update the lists with served and notServed customers
