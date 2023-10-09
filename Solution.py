@@ -393,8 +393,11 @@ class Solution:
 
             if not inserted:
                 iInsert = costInsert.index(minCost)
-                self.routes_2[iInsert] = self.routes_2[iInsert].greedyInsert(
-                    cust.deliveryLoc, cust.deliveryLoc.demand)                
+                afterInsertion = self.routes_2[iInsert].greedyInsert(
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
+                afterInsertion.customers = self.routes_2[iInsert].customers
+                afterInsertion.customers.add(cust)      
+                self.routes_2[iInsert] = afterInsertion              
             # update the lists with served and notServed customers
             self.served.append(cust)
             self.notServed.remove(cust) 
@@ -427,62 +430,82 @@ class Solution:
         """
         # determine regret values for all unserved customers
         custRegret = []
+
+        # remove the empty routes from routes_2
+        self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
+
         for cust in self.notServed:
-            bestCost = 1_000_000_000
-            secondbestCost = 1_000_000_000
+            best = (1_000_000_000, 0)
+            secondBest = (1_000_000_000,0)
             bestRoute = None
-            bestRouteIndex = None
             for iRoute, route in enumerate(self.routes_2):
                 routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
-                if routeBestCost < bestCost:
-                    secondbestCost = bestCost
-                    bestCost = routeBestCost
+                if routeBestCost < best[0]:
+                    secondBest = best
+                    best = (routeBestCost, iRoute)
                     bestRoute = routeBest
-                    bestRouteIndex = iRoute
-                if routeSecondCost < secondbestCost:
-                    secondbestCost = routeSecondCost
-            custRegret.append([bestCost, secondbestCost, bestRoute, bestRouteIndex])
+                if routeSecondCost < secondBest[0]:
+                    secondBest = (routeSecondCost, iRoute)
+            custRegret.append([best, secondBest, bestRoute])
         
         # find the customer with the highest regret value
         while len(self.notServed) > 0:
             # find the customer with the highest regret value
-            idxBestRegret = custRegret.index(max(custRegret, key=lambda x: x[1]-x[0]))
+            idxBestRegret = custRegret.index(max(custRegret, key=lambda x: x[1][0]-x[0][0]))
             bestRegret = custRegret.pop(idxBestRegret)
             # pick the customer with the highest regret value
             cust = self.notServed[idxBestRegret]
             inserted = False
 
-            if bestRegret[0] > self.problem.cost_second:
-                # create a new route with the customer
+            if bestRegret[0][0] > self.problem.cost_second:
+                # Consider a new route with the customer
                 nSat = len(self.problem.satellites)
                 iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
                 newRoute.customers = {cust}	
-                if newRoute.cost < bestRegret[0]:
+                if newRoute.cost < bestRegret[0][0]:
                     self.routes_2.append(newRoute)
                     inserted = True
-                    bestRegret[3] = len(self.routes_2)-1
+                    bestRegret[0] = (newRoute.cost, len(self.routes_2)-1)
             
             if not inserted:
                 # insert the customer in the best route
-                self.routes_2[bestRegret[3]] = bestRegret[2]
+                bestRegret[2].customers = self.routes_2[bestRegret[0][1]].customers
+                bestRegret[2].customers.add(cust)
+                self.routes_2[bestRegret[0][1]] = bestRegret[2]
             
             # remove the customer from the list of unserved customers
             self.notServed.remove(cust)
             self.served.append(cust)
 
-            # update the list with regret values for the updated route
-            for iCust, cust in enumerate(self.notServed):
-                routeBestCost, routeSecondCost, routeBest = self.routes_2[bestRegret[3]].findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
-                if routeBestCost < custRegret[iCust][0]:
-                    custRegret[iCust][1] = custRegret[iCust][0]
-                    custRegret[iCust][0] = routeBestCost
-                    custRegret[iCust][2] = routeBest
-                    custRegret[iCust][3] = bestRegret[3]
-                if routeSecondCost < custRegret[iCust][1]:
-                    custRegret[iCust][1] = routeSecondCost
+            # update the list with regret values for the new routes
+            custRegret = []
+            for cust in self.notServed:
+                best = (1_000_000_000, 0)
+                secondBest = (1_000_000_000,0)
+                bestRoute = None
+                for iRoute, route in enumerate(self.routes_2):
+                    routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+                    if routeBestCost < best[0]:
+                        secondBest = best
+                        best = (routeBestCost, iRoute)
+                        bestRoute = routeBest
+                    if routeSecondCost < secondBest[0]:
+                        secondBest = (routeSecondCost, iRoute)
+                custRegret.append([best, secondBest, bestRoute])
+        
+
+            # for iCust, cust in enumerate(self.notServed):
+            #     routeBestCost, routeSecondCost, routeBest = self.routes_2[bestRegret[3]].findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+            #     if routeBestCost < custRegret[iCust][0]:
+            #         custRegret[iCust][1] = custRegret[iCust][0]
+            #         custRegret[iCust][0] = routeBestCost
+            #         custRegret[iCust][2] = routeBest
+            #         custRegret[iCust][3] = bestRegret[3]
+            #     if routeSecondCost < custRegret[iCust][1]:
+            #         custRegret[iCust][1] = routeSecondCost
 
     def plotRoutes(self, name: str):
         """

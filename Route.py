@@ -32,7 +32,7 @@ class Route:
 
     def __init__(self, locations: list[Location], problem, isFirstEchelonRoute: bool, load: list[int]):
         self.locations = locations
-        self.customers = []
+        self.customers = set()
         self.problem = problem
         # track the demand for each satellite for the first echelon route
         self.isFirstEchelonRoute = isFirstEchelonRoute
