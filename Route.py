@@ -2,6 +2,7 @@
 """
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
+from copy import deepcopy
 import sys
 from Location import Location
 
@@ -152,6 +153,29 @@ class Route:
                     break
 
         return location_index, load
+
+    def insertLocation(self, location: Location, load: int, location_index: int):
+        """
+        Method that inserts a location to the route.
+
+        Parameters
+        ----------
+        location : location to be inserted.
+        load : load for delivery.
+        location_index :  the index of the location from the list of locations of this vehicle routes.
+        """
+        routeCopy = deepcopy(self)
+        # update the route location
+        routeCopy.locations.insert(location_index, location)
+        # the route changes, so update
+        routeCopy.cost = self.computeCost()
+        # insert the servedLoad
+        routeCopy.servedLoad.insert(location_index - 1, load)
+
+        if routeCopy.isFeasible():
+            return routeCopy
+        else:
+            return None
 
     def greedyInsert(self, location: Location, load: int):
         """
