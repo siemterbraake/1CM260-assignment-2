@@ -95,6 +95,8 @@ class ALNS:
         cpuTime = round(endtime-starttime)
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
+        print(f"Time for the destroy operators: {self.tDestroyOps}. Weights for the destroy operators: {self.wDestroyOps}")
+
         print(f"Time for the repair operators: {self.tRepairOps}. Weights for the repair operators: {self.wRepairOps}")
     
     def checkIfAcceptNewSol(self, i: int):
