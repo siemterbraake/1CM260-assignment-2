@@ -464,7 +464,7 @@ class Solution:
                 if afterInsertion is not None:
                     cost = afterInsertion.cost-route.cost
                     if pertubation:
-                        cost += cost*randomGen.uniform(-0.2, 0.2)
+                        cost += cost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                 else:
                     cost = float('inf')
                 costInsert.append(cost)
@@ -535,8 +535,8 @@ class Solution:
             for iRoute, route in enumerate(self.routes_1):
                 routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
                 if pertubation:
-                    routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
-                    routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                    routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                    routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                 if routeBestCost < best[0]:
                     secondBest = best
                     best = (routeBestCost, iRoute)
@@ -584,8 +584,8 @@ class Solution:
                 for iRoute, route in enumerate(self.routes_1):
                     routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
                     if pertubation:
-                        routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
-                        routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                        routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                        routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                     if routeBestCost < best[0]:
                         secondBest = best
                         best = (routeBestCost, iRoute)
@@ -613,8 +613,8 @@ class Solution:
             for iRoute, route in enumerate(self.routes_2):
                 routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
                 if pertubation:
-                    routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
-                    routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                    routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                    routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                 if routeBestCost < best[0]:
                     secondBest = best
                     best = (routeBestCost, iRoute)
@@ -667,8 +667,8 @@ class Solution:
                 for iRoute, route in enumerate(self.routes_2):
                     routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
                     if pertubation:
-                        routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
-                        routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                        routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                        routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                     if routeBestCost < best[0]:
                         secondBest = best
                         best = (routeBestCost, iRoute)

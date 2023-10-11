@@ -18,7 +18,7 @@ class Parameters:
     minSizeNBH = 1  # minimum neighborhood size
     maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
-    T = 10 # Temperature for Simulated Annealing
+    T = 40 # Temperature for Simulated Annealing
     Cool = 0.99 # Cooling rate
     # can add parameters such as cooling rate etc.
 
@@ -133,7 +133,6 @@ class ALNS:
             p = self.randomGen.random()
             Parameters.T = Parameters.Cool*Parameters.T
             if p < prob:
-                print("Toppie")
                 self.currentSolution = copy.deepcopy(self.tempSolution)
                 score = 1
                 return score
