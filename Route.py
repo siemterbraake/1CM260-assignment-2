@@ -112,7 +112,7 @@ class Route:
         curLoad = 0  # current load in vehicle
 
         if self.isFirstEchelonRoute is False:
-            if self.computeDistance() > 100:
+            if self.computeDistance() > self.problem.range_second:
                 return False
 
         # iterate over route and check capacity feasibility
