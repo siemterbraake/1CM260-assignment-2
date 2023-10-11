@@ -155,6 +155,7 @@ class Solution:
             for j in routes:
                 if k in j.locations:
                     route = j
+                    continue
             self.removeLocation(k, firstEchelon, route)
 
     def executeWorstRemoval(self, nRemove:int, random: Random, firstEchelon: bool):
@@ -185,6 +186,7 @@ class Solution:
             for j in routes:
                 if k in j.locations:
                     route = j
+                    continue
             ind = route.locations.index(k)
             from_loc = route.locations[ind-1]
             to_loc = route.locations[ind+1]
