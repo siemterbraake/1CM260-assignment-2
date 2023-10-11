@@ -162,7 +162,7 @@ class Solution:
                     continue
             self.removeLocation(k, firstEchelon, route)
 
-    def executeWorstRemoval(self, nRemove:int, random: Random, firstEchelon: bool):
+    def executeWorstRemoval(self, nRemove:int, random: Random, firstEchelon: bool, pertubation: bool):
         """
         Method that executes the worst removal of locations
 
@@ -198,6 +198,8 @@ class Solution:
             cost_without = Location.getDistance(from_loc,to_loc)
             avg_cost = cost_with/2 #To normalize the cost
             cost = (cost_with-cost_without)/avg_cost
+            if pertubation:
+                cost += cost*pow(random.random(),random.uniform(-0.2, 0.2))
             if cost < removing_max:
                 removing.append((cost, i, route))
                 if len(removing) > nRemove:

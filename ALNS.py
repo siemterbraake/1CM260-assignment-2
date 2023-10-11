@@ -18,7 +18,7 @@ class Parameters:
     minSizeNBH = 1  # minimum neighborhood size
     maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
-    T = 1 # Temperature for Simulated Annealing
+    T = 10 # Temperature for Simulated Annealing
     Cool = 0.99 # Cooling rate
     # can add parameters such as cooling rate etc.
 
@@ -133,6 +133,7 @@ class ALNS:
             p = self.randomGen.random()
             Parameters.T = Parameters.Cool*Parameters.T
             if p < prob:
+                print("Toppie")
                 self.currentSolution = copy.deepcopy(self.tempSolution)
                 score = 1
                 return score
@@ -199,8 +200,10 @@ class ALNS:
             self.tempSolution.executeRandomRemoval(sizeNBH,self.randomGen, False)
         elif destroyHeuristicNr == 2:
             self.tempSolution.executeRelatedRemoval(sizeNBH,self.randomGen, False)
+        elif destroyHeuristicNr == 3:
+            self.tempSolution.executeWorstRemoval(sizeNBH,self.randomGen, False, False)
         else:
-            self.tempSolution.executeWorstRemoval(sizeNBH,self.randomGen, False)
+            self.tempSolution.executeWorstRemoval(sizeNBH, self.randomGen, False, True)
         tDestroy = time.perf_counter()-startTime_destroy
 
         #perform the repair
