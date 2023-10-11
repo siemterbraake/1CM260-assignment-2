@@ -2,6 +2,7 @@
 """
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
+from copy import deepcopy
 import sys
 from Location import Location
 
@@ -32,7 +33,7 @@ class Route:
 
     def __init__(self, locations: list[Location], problem, isFirstEchelonRoute: bool, load: list[int]):
         self.locations = locations
-        self.customers = []
+        self.customers = set()
         self.problem = problem
         # track the demand for each satellite for the first echelon route
         self.isFirstEchelonRoute = isFirstEchelonRoute
@@ -65,7 +66,7 @@ class Route:
 
         """
         # Calculate the distance
-        # distance = self.computeDistance()
+        self.distance = self.computeDistance()
         toCost = 0
         handling = 0    
         # Calculate the handling cost
@@ -153,6 +154,29 @@ class Route:
 
         return location_index, load
 
+    def insertLocation(self, location: Location, load: int, location_index: int):
+        """
+        Method that inserts a location to the route.
+
+        Parameters
+        ----------
+        location : location to be inserted.
+        load : load for delivery.
+        location_index :  the index of the location from the list of locations of this vehicle routes.
+        """
+        routeCopy = deepcopy(self)
+        # update the route location
+        routeCopy.locations.insert(location_index, location)
+        # the route changes, so update
+        routeCopy.cost = self.computeCost()
+        # insert the servedLoad
+        routeCopy.servedLoad.insert(location_index - 1, load)
+
+        if routeCopy.isFeasible():
+            return routeCopy
+        else:
+            return None
+
     def greedyInsert(self, location: Location, load: int):
         """
         Method that inserts the location and corresponding load to a route
@@ -188,3 +212,46 @@ class Route:
                     bestInsert = afterInsertion
                     minDist = afterInsertion.distance
         return bestInsert
+    
+    def findRegret(self, location: Location, load: int) -> tuple[float, float]:
+        """
+        Method that find the regret value for the location and corresponding load to a route
+
+        Parameters
+        ----------
+        location : customers or satellites location for insertion.
+        load : load for delivery.
+
+        Returns
+        -------
+        bestCost : the cost of the best insertion
+        secondbestCost : the cost of the second best insertion
+        """
+        curCost = self.cost
+        bestCost = 1_000_000_000
+        secondbestCost = 1_000_000_000
+        bestRoute = None
+        # return None if empty is sent.
+        if load <= 0:
+            return bestCost-curCost, secondbestCost-curCost, bestRoute
+        # iterate over all possible insertion positions
+        for i in range(1, len(self.locations)):
+            locationsCopy = self.locations.copy()
+            demandCopy = self.servedLoad.copy()
+            # update demand
+            demandCopy.insert(i-1, load)
+            locationsCopy.insert(i, location)
+            afterInsertion = Route(locationsCopy, self.problem, self.isFirstEchelonRoute, demandCopy)
+            # check if insertion is feasible
+            if afterInsertion.isFeasible():
+                # check if cheapest
+                if afterInsertion.cost < bestCost:
+                    secondbestCost = bestCost
+                    bestCost = afterInsertion.cost
+                    bestRoute = afterInsertion
+                elif afterInsertion.cost < secondbestCost:
+                    secondbestCost = afterInsertion.cost
+        return bestCost-curCost, secondbestCost-curCost, bestRoute
+
+
+    

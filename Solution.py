@@ -2,6 +2,8 @@
 """
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
+import matplotlib.pyplot as plt
+from copy import deepcopy
 from Route import Route
 from Location import Location
 from Customer import Customer
@@ -105,6 +107,8 @@ class Solution:
                 # if the route has loads/customers.
                 if len(route.locations) > 2:
                     break
+                else:
+                    routes.remove(route)
                 len_route = [len(i.locations) for i in routes]
                 # All routes are empty: no served loads or customers
                 if sum(len_route) == 2 * len(routes):
@@ -375,3 +379,328 @@ class Solution:
             # update the lists with served and notServed customers
             self.served.append(cust)
             self.notServed.remove(cust)
+
+    def executeGreedyInsertion(self, randomGen: Random, pertubation: bool):
+        """
+        Method that contruct the routes for the first and second echelon vehicles by
+        1. Greedy insertion to create the second echelon routes.
+        2. depending on the constructed second echelon routes, insert demand at the
+        satellites to construct the first echelon routes.
+        """	
+        self.executeGreedyInsertionSecond(randomGen, pertubation)
+        # Based on the second echelon routes, generate the first echelon routes
+        self.executeGreedyInsertionFirst(randomGen, pertubation)
+
+    def executeGreedyInsertionFirst(self, randomGen: Random, perturbation: bool):
+        """
+        Method that performs Greedy insertion to construct the first-level routes.
+        """
+        # Determine the first echelon from the given-second echelon routes
+        # This is used to reset the existing first-echelon route.
+        self.routes_1 = []
+        # Derive demands for satellites
+        self.computeDemandSatellites()
+        # Create list of unserved satellites
+        unservedSatID = [i+1 for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
+        # Initialize iterative process
+        curCity = 0 # depot
+        full = True # this causes a new route to be created
+        while len(unservedSatID) > 0:
+            # Find the satellite nearest to the current city
+            curCity = self.problem.distMatrix[curCity][unservedSatID].argmin()
+            # Find the satellite ID
+            curCity = unservedSatID[curCity]
+            if full:
+                # initialize a new route
+                depot = self.problem.depot
+                locList = [depot, self.problem.satellites[curCity-1], depot]
+                remain_load = self.problem.capacity_first 
+                if self.satDemandNotServed[curCity-1] > remain_load:
+                    load = remain_load
+                else:
+                    load = self.satDemandNotServed[curCity-1]
+                    unservedSatID.remove(curCity)
+                    full = False
+                curRoute = Route(locList, self.problem, True, [load])
+                self.routes_1.append(curRoute)
+                # update the demand
+                self.satDemandNotServed[curCity-1] -= load
+                self.satDemandServed[curCity-1] += load
+            else:
+                # add the satellite to the current route
+                curRoute = self.routes_1[-1]
+                load = self.satDemandNotServed[curCity-1]
+                afterInsertion = curRoute.insertLocation(
+                    self.problem.satellites[curCity-1], load, len(curRoute.locations))
+                if afterInsertion == None:
+                    full = True
+                else:
+                    unservedSatID.remove(curCity)
+                    self.routes_1.append(afterInsertion)
+                    # update the demand
+                    self.satDemandNotServed[curCity-1] -= load
+                    self.satDemandServed[curCity-1] += load 
+
+    def executeGreedyInsertionSecond(self, randomGen: Random, pertubation: bool):
+        """
+        Method that performs Greedy insertion to construct the second-level routes
+        """
+
+        # Remove the empty routes from routes_2
+        self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
+
+        while len(self.notServed) > 0:
+            # select a random unserved customer
+            cust = randomGen.choice(self.notServed)
+            inserted = False
+            
+            # Find the route where a Greedy insertion is the cheapest
+            costInsert = []
+            for route in self.routes_2:
+                afterInsertion = route.greedyInsert(
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
+                if afterInsertion is not None:
+                    cost = afterInsertion.cost-route.cost
+                    if pertubation:
+                        cost += cost*randomGen.uniform(-0.2, 0.2)
+                else:
+                    cost = float('inf')
+                costInsert.append(cost)
+            
+            # Find the route with the minimum cost and insert the customer
+            if len(costInsert) == 0:
+                costInsert = [float('inf')]
+
+            # Find the minimum cost
+            minCost = min(costInsert)
+
+            # If the cost is higher than the cost of opening a new rout, consider a new route
+            if minCost > self.problem.cost_second:   
+                # create a new route with the customer
+                nSat = len(self.problem.satellites)
+                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
+                sat = self.problem.satellites[iSat]
+                locList = [sat, cust.deliveryLoc, sat]
+                newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
+                newRoute.customers = {cust}	
+                if newRoute.cost < minCost:
+                    self.routes_2.append(newRoute)
+                    inserted = True
+
+            if not inserted:
+                iInsert = costInsert.index(minCost)
+                afterInsertion = self.routes_2[iInsert].greedyInsert(
+                    cust.deliveryLoc, cust.deliveryLoc.demand)
+                afterInsertion.customers = self.routes_2[iInsert].customers
+                afterInsertion.customers.add(cust)      
+                self.routes_2[iInsert] = afterInsertion              
+            # update the lists with served and notServed customers
+            self.served.append(cust)
+            self.notServed.remove(cust) 
+
+    def executeRegretInsertion(self, randomGen: Random, pertubation: bool):
+        """
+        Method that contruct the routes for the first and second echelon vehicles by regret-2 insertion. 
+        First, we insert the customers to create the second echelon routes.
+        Second, depending on the constructed second echelon routes, insert demand at the
+        satellites to construct the first echelon routes.
+        
+        This is repair method number 3 in the ALNS
+        """
+        self.executeRegretInsertionSecond(randomGen, pertubation)
+        # Based on the second echelon routes, generate the first echelon routes
+        self.executeRegretInsertionFirst(randomGen, pertubation)
+
+    def executeRegretInsertionFirst(self, randomGen: Random, pertubation: bool):
+        """
+        Method that performs regret-2 insertion to construct the first-level routes.
+
+        """
+        # Determine the first echelon from the given-second echelon routes
+        # This is used to reset the existing first-echelon route.
+        self.routes_1 = []
+        # Derive demands for satellites
+        self.computeDemandSatellites()
+        # Create list of unserved satellites
+        unservedSatID = [i+1 for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
+
+        # Find regret values for all unserved satellites
+        satRegret = []
+        for sat in unservedSatID:
+            best = (1_000_000_000, 0)
+            secondBest = (1_000_000_000,0)
+            bestRoute = None
+            for iRoute, route in enumerate(self.routes_1):
+                routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+                if pertubation:
+                    routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
+                    routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                if routeBestCost < best[0]:
+                    secondBest = best
+                    best = (routeBestCost, iRoute)
+                    bestRoute = routeBest
+                if routeSecondCost < secondBest[0]:
+                    secondBest = (routeSecondCost, iRoute)
+            satRegret.append([best, secondBest, bestRoute])
+        
+        # find the satellite with the highest regret value
+        while len(unservedSatID) > 0:
+            # find the customer with the highest regret value
+            idxBestRegret = satRegret.index(max(satRegret, key=lambda x: x[1][0]-x[0][0]))
+            bestRegret = satRegret.pop(idxBestRegret)
+            # pick the satellite with the highest regret value
+            sat = unservedSatID[idxBestRegret]
+            inserted = False
+
+            if bestRegret[0][0] > self.problem.cost_first:
+                # Consider a new route with the satellite
+                depot = self.problem.depot
+                locList = [depot, self.problem.satellites[sat-1], depot]
+                if self.satDemandNotServed[sat-1] > self.problem.capacity_first:
+                    load = self.problem.capacity_first
+                else:
+                    load = self.satDemandNotServed[sat-1]
+                newRoute = Route(locList, self.problem, True, [load])
+                if newRoute.cost < bestRegret[0][0]:
+                    self.routes_1.append(newRoute)
+                    inserted = True
+                    bestRegret[0] = (newRoute.cost, len(self.routes_1)-1)
+            
+            if not inserted:
+                # insert the satellite in the best route
+                self.routes_1[bestRegret[0][1]] = bestRegret[2]
+            
+            # remove the satellite from the list of unserved satellites
+            unservedSatID.remove(sat)
+
+            # update the list with regret values for the new routes
+            satRegret = []
+            for sat in unservedSatID:
+                best = (1_000_000_000, 0)
+                secondBest = (1_000_000_000,0)
+                bestRoute = None
+                for iRoute, route in enumerate(self.routes_1):
+                    routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+                    if pertubation:
+                        routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
+                        routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                    if routeBestCost < best[0]:
+                        secondBest = best
+                        best = (routeBestCost, iRoute)
+                        bestRoute = routeBest
+                    if routeSecondCost < secondBest[0]:
+                        secondBest = (routeSecondCost, iRoute)
+                satRegret.append([best, secondBest, bestRoute])
+            
+    def executeRegretInsertionSecond(self, randomGen: Random, pertubation: bool):
+        """
+        Method that performs regret-2 insertion to construct the second-level routes
+        based on the first-level routes.
+
+        """
+        # determine regret values for all unserved customers
+        custRegret = []
+
+        # remove the empty routes from routes_2
+        self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
+
+        for cust in self.notServed:
+            best = (1_000_000_000, 0)
+            secondBest = (1_000_000_000,0)
+            bestRoute = None
+            for iRoute, route in enumerate(self.routes_2):
+                routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+                if pertubation:
+                    routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
+                    routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                if routeBestCost < best[0]:
+                    secondBest = best
+                    best = (routeBestCost, iRoute)
+                    bestRoute = routeBest
+                if routeSecondCost < secondBest[0]:
+                    secondBest = (routeSecondCost, iRoute)
+            custRegret.append([best, secondBest, bestRoute])
+        
+        # loop until all customers are served
+        while len(self.notServed) > 0:
+            # find the customer with the highest regret value
+            idxBestRegret = custRegret.index(max(custRegret, key=lambda x: x[1][0]-x[0][0]))
+            bestRegret = custRegret.pop(idxBestRegret)
+            # pick the customer with the highest regret value
+            cust = self.notServed[idxBestRegret]
+            inserted = False
+
+            if bestRegret[0][0] > self.problem.cost_second:
+                # Consider a new route with the customer
+                nSat = len(self.problem.satellites)
+                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
+                sat = self.problem.satellites[iSat]
+                locList = [sat, cust.deliveryLoc, sat]
+                newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
+                newRoute.customers = {cust}	
+                if newRoute.cost < bestRegret[0][0]:
+                    self.routes_2.append(newRoute)
+                    inserted = True
+                    bestRegret[0] = (newRoute.cost, len(self.routes_2)-1)
+            
+            if not inserted:
+                # insert the customer in the best route
+                bestRegret[2].customers = self.routes_2[bestRegret[0][1]].customers
+                bestRegret[2].customers.add(cust)
+                self.routes_2[bestRegret[0][1]] = bestRegret[2]
+            
+            # remove the customer from the list of unserved customers
+            self.notServed.remove(cust)
+            self.served.append(cust)
+
+            # update the list with regret values for the new routes
+            #TODO: MAKE THIS MORE EFFICIENT
+            custRegret = []
+            for cust in self.notServed:
+                best = (1_000_000_000, 0)
+                secondBest = (1_000_000_000,0)
+                bestRoute = None
+                for iRoute, route in enumerate(self.routes_2):
+                    routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+                    if pertubation:
+                        routeBestCost += routeBestCost*randomGen.uniform(-0.2, 0.2)
+                        routeSecondCost += routeSecondCost*randomGen.uniform(-0.2, 0.2)
+                    if routeBestCost < best[0]:
+                        secondBest = best
+                        best = (routeBestCost, iRoute)
+                        bestRoute = routeBest
+                    if routeSecondCost < secondBest[0]:
+                        secondBest = (routeSecondCost, iRoute)
+                custRegret.append([best, secondBest, bestRoute])
+
+    def plotRoutes(self, name: str):
+        """
+        Method that plots the routes
+        """
+        fig = plt.figure(figsize=(10,10), dpi=400)
+        plt.title("Tour")
+        # plot the second echelon routes
+        for route in self.routes_2:
+            for i in range(len(route.locations)-1):
+                plt.plot([route.locations[i].xLoc,route.locations[i+1].xLoc],
+                         [route.locations[i].yLoc,route.locations[i+1].yLoc],'b')
+                # plot the first echelon routes
+        for route in self.routes_1:
+            for i in range(len(route.locations)-1):
+                plt.plot([route.locations[i].xLoc,route.locations[i+1].xLoc],
+                         [route.locations[i].yLoc,route.locations[i+1].yLoc],'r')
+        # plot the depot
+        plt.plot(self.problem.depot.xLoc,self.problem.depot.yLoc,'ko')
+        plt.annotate(0, (self.problem.depot.xLoc, self.problem.depot.yLoc))
+        # plot the customers
+        for i in self.problem.customers:
+            plt.plot(i.deliveryLoc.xLoc,i.deliveryLoc.yLoc,'bo')
+            plt.annotate(i.ID, (i.deliveryLoc.xLoc, i.deliveryLoc.yLoc))
+        # plot the satellites
+        for i in self.problem.satellites:
+            plt.plot(i.xLoc,i.yLoc,'ro')
+            plt.annotate(i.nodeID, (i.xLoc, i.yLoc))
+            
+
+        fig.savefig(f"Plots/{name}")
+

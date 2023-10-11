@@ -12,9 +12,9 @@ class Parameters:
     """
     Class that holds all the parameters for ALNS
     """
-    nIterations = 10  # number of iterations of the ALNS
+    nIterations = 100  # number of iterations of the ALNS
     minSizeNBH = 1  # minimum neighborhood size
-    maxSizeNBH = 45  # maximum neighborhood size
+    maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
     # can add parameters such as cooling rate etc.
 
@@ -84,7 +84,7 @@ class ALNS:
             self.tempSolution.computeCost()
             print("Iteration "+str(i)+": Found solution with cost: "+str(self.tempSolution.cost))
             #determine if the new solution is accepted
-            score = self.checkIfAcceptNewSol()
+            score = self.checkIfAcceptNewSol(i)
             #update the ALNS weights
             self.updateWeights(destroyOpNr, repairOpNr, score)
             #update the time and number of uses of the operators
@@ -95,8 +95,9 @@ class ALNS:
         cpuTime = round(endtime-starttime)
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
+        print(f"Time for the repair operators: {self.tRepairOps}. Weights for the repair operators: {self.wRepairOps}")
     
-    def checkIfAcceptNewSol(self):
+    def checkIfAcceptNewSol(self, i: int):
         """
         Method that checks if we accept the newly found solution
 
@@ -106,6 +107,7 @@ class ALNS:
         """
         # if we found a global best solution, we always accept
         if self.tempSolution.cost < self.bestCost:
+            self.tempSolution.plotRoutes(f"ALNS Iteration {i}")
             self.bestCost = self.tempSolution.cost
             self.bestSolution = copy.deepcopy(self.tempSolution)
             self.currentSolution = copy.deepcopy(self.tempSolution)
@@ -123,13 +125,17 @@ class ALNS:
         score = 0
         return score
     
-    def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.95):
+    def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.99):
         """
         Method that updates the weights of the destroy and repair operators
         """
         self.wDestroyOps[destroyOpNr-1] = self.wLambda*self.wDestroyOps[destroyOpNr-1] + (1-self.wLambda)*score
         self.wRepairOps[repairOpNr-1] = self.wLambda*self.wRepairOps[repairOpNr-1] + (1-self.wLambda)*score
         self.wLambda = self.wLambda*decay #update the lambda parameter
+
+        self.wDestroyOps = [i/sum(self.wDestroyOps) for i in self.wDestroyOps] #normalize the weights
+        self.wRepairOps = [i/sum(self.wRepairOps) for i in self.wRepairOps] #normalize the weights
+
     
     def determineDestroyOpNr(self) -> int:
         """
@@ -187,9 +193,11 @@ class ALNS:
         if repairHeuristicNr == 1:
             self.tempSolution.executeRandomInsertion(self.randomGen)
         elif repairHeuristicNr == 2:
-            self.tempSolution.executeRepairMethod2()
+            self.tempSolution.executeGreedyInsertion(self.randomGen, False)
+        elif repairHeuristicNr == 3:
+            self.tempSolution.executeGreedyInsertion(self.randomGen, True)
         else:
-            self.tempSolution.executeRepairMethod3()
+            self.tempSolution.executeRegretInsertion(self.randomGen, False)
         tRepair = time.perf_counter()-startTime_repair
 
         #store average perform times (iterative expression)
