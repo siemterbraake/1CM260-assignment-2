@@ -7,7 +7,7 @@ from Problem import ProblemSet
 from Setup import instanceList
 
 if __name__ == "__main__":
-    nDestroyOps = 1
+    nDestroyOps = 3
     nRepairOps = 1
     problemSet = ProblemSet(instanceList)
     problemSet.runALNS(nDestroyOps, nRepairOps)

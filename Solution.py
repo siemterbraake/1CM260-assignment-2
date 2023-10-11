@@ -6,6 +6,7 @@ from Route import Route
 from Location import Location
 from Customer import Customer
 from random import Random
+import numpy as np
 
 
 class Solution:
@@ -108,11 +109,102 @@ class Solution:
                 # All routes are empty: no served loads or customers
                 if sum(len_route) == 2 * len(routes):
                     break
-            if len(route.locations) == 2:
+            if len(route.locations) == 2: #Includes the satellite locations therefore we break
                 break
             loc = random.choice(route.locations[1:-1]) 
             self.removeLocation(loc, firstEchelon, route)
 
+    def executeRelatedRemoval(self, nRemove:int, random: Random, firstEchelon: bool):
+        """
+        Method that executes the related removal of locations around a random location
+
+        This is destroy method number 2 in the ALNS
+
+        Parameters
+        ----------
+        nRemove : number of customers that is removed.                 
+        randomGen :  Used to generate random numbers        
+        firstEchelon: True if choose to remove location from the first-echelon routes
+            False otherwise
+        """
+        if firstEchelon is True:
+            routes = self.routes_1
+        else:
+            routes = self.routes_2
+        while True: # Randomly choose a route
+            route = random.choice(routes)
+            if len(route.locations) > 2:
+                break
+        main_loc = random.choice(route.locations[1:-1]) # Choose random location from the random route
+        self.removeLocation(main_loc, firstEchelon, route) # Remove the random location
+        removing = []
+        removing_max = np.inf
+        for i in self.served:
+            #if self.served.index(i) == nRemove-1:
+                #removing_max = max([z[0] for z in removing])
+            dist = Location.getDistance(main_loc, i.deliveryLoc)
+            if dist < removing_max:
+                removing.append((dist, i))
+                if len(removing) > nRemove:
+                    removing_max = max([z[0] for z in removing])
+                    for z in removing:
+                        if z[0] == removing_max:
+                            removing.remove(z)
+        for i in removing:
+            k = i[1].deliveryLoc
+            for j in routes:
+                if k in j.locations:
+                    route = j
+                    continue
+            self.removeLocation(k, firstEchelon, route)
+
+    def executeWorstRemoval(self, nRemove:int, random: Random, firstEchelon: bool):
+        """
+        Method that executes the worst removal of locations
+
+        This is destroy method number 3 in the ALNS
+
+        Parameters
+        ----------
+        nRemove : number of customers that is removed.                 
+        randomGen :  Used to generate random numbers        
+        firstEchelon: True if choose to remove location from the first-echelon routes
+            False otherwise
+        """
+        if firstEchelon is True:
+            routes = self.routes_1
+        else:
+            routes = self.routes_2
+        removing = []
+        removing_max = np.inf
+        for i in self.served:
+            #if self.served.index(i) == nRemove-1:
+                #removing_max = max([z[0] for z in removing])
+            k = i.deliveryLoc
+            if k.typeLoc == 1:
+                continue
+            for j in routes:
+                if k in j.locations:
+                    route = j
+                    continue
+            ind = route.locations.index(k)
+            from_loc = route.locations[ind-1]
+            to_loc = route.locations[ind+1]
+            cost_with = Location.getDistance(from_loc, k)+Location.getDistance(k, to_loc)
+            cost_without = Location.getDistance(from_loc,to_loc)
+            avg_cost = cost_with/2 #To normalize the cost
+            cost = (cost_with-cost_without)/avg_cost
+            if cost < removing_max:
+                removing.append((cost, i, route))
+                if len(removing) > nRemove:
+                    removing_max = max([z[0] for z in removing])
+                    for z in removing:
+                        if z[0] == removing_max:
+                            removing.remove(z)
+        for i in removing:
+            self.removeLocation(i[1].deliveryLoc, firstEchelon, i[2])
+
+    
     def removeLocation(self,location: Location, firstEchelon: bool, route: Route):
         """
         Method that removes a location from the indicated level of echelon vehicles
