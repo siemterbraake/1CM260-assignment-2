@@ -6,6 +6,7 @@ from Solution import Solution
 from random import Random
 import copy
 import time
+import math
 
 
 class Parameters:
@@ -16,6 +17,8 @@ class Parameters:
     minSizeNBH = 1  # minimum neighborhood size
     maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
+    T = 1 # Temperature for Simulated Annealing
+    Cool = 0.99 # Cooling rate
     # can add parameters such as cooling rate etc.
 
 
@@ -115,14 +118,21 @@ class ALNS:
             self.currentSolution = copy.deepcopy(self.tempSolution)
             print("Found new global best solution.")
             score = 2
+            Parameters.T = Parameters.Cool*Parameters.T
             return score
         
-        # currently, we only accept better solutions, no simulated annealing
-        if self.tempSolution.cost<self.currentSolution.cost:
-            self.currentSolution = copy.deepcopy(self.tempSolution)
-            score = 1
-            return score
-        
+        else:
+            diff = self.tempSolution.cost - self.currentSolution.cost
+            prob = math.exp(-diff/Parameters.T)
+            p = self.randomGen.random()
+            Parameters.T = Parameters.Cool*Parameters.T
+            if p < prob:
+                self.currentSolution = copy.deepcopy(self.tempSolution)
+                score = 1
+                return score
+            else:
+                score = 0
+                return score
         # if we did not accept the new solution, we do not update the current solution
         score = 0
         return score
