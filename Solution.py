@@ -353,6 +353,10 @@ class Solution:
         """
         Method that performs Greedy insertion to construct the second-level routes
         """
+
+        # Remove the empty routes from routes_2
+        self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
+
         while len(self.notServed) > 0:
             # select a random unserved customer
             cust = randomGen.choice(self.notServed)
