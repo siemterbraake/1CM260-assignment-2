@@ -2,6 +2,7 @@
 """
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
+import matplotlib.pyplot as plt
 from Solution import Solution
 from random import Random
 import copy
@@ -52,6 +53,7 @@ class ALNS:
         self.nUsedRepairOps = [0]*nRepairOps #initially all destroy operators are used 0 times
         self.wLambda = 0.5 #parameter that controls the sensitivity of the weights
         self.randomGen = Random(Parameters.randomSeed) #used for reproducibility
+        self.solutionTrend = list() #list that stores the best solution found at each iteration
         
     def constructInitialSolution(self):
         """
@@ -64,6 +66,7 @@ class ALNS:
         self.currentSolution.computeCost()
         self.bestSolution = copy.deepcopy(self.currentSolution)
         self.bestCost = self.currentSolution.cost
+        self.solutionTrend.append(self.bestCost)
         print("Created initial solution with cost: "+str(self.bestCost))
         
     def execute(self):
@@ -93,9 +96,12 @@ class ALNS:
             #update the time and number of uses of the operators
             self.nUsedDestroyOps[destroyOpNr-1] += 1
             self.nUsedRepairOps[repairOpNr-1] += 1
+            #store the best solution found at each iteration
+            self.solutionTrend.append(self.currentSolution.cost)
 
         endtime = time.time() # get the end time
         cpuTime = round(endtime-starttime)
+        self.plotSolutionTrend()
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
         print(f"Time for the destroy operators: {self.tDestroyOps}. Weights for the destroy operators: {self.wDestroyOps}")
@@ -216,3 +222,13 @@ class ALNS:
         else:
             self.tDestroyOps[destroyHeuristicNr-1] = (self.nUsedDestroyOps[destroyHeuristicNr-1]*self.tDestroyOps[destroyHeuristicNr-1] + tDestroy)/(self.nUsedDestroyOps[destroyHeuristicNr-1]+1)
             self.tRepairOps[repairHeuristicNr-1] = (self.nUsedRepairOps[repairHeuristicNr-1]*self.tRepairOps[repairHeuristicNr-1] + tRepair)/(self.nUsedRepairOps[repairHeuristicNr-1]+1)
+
+    def plotSolutionTrend(self):
+        """
+        Method that plots the solution trend
+        """
+        plt.figure()
+        plt.plot(self.solutionTrend)
+        plt.ylabel('Cost')
+        plt.xlabel('Iteration')
+        plt.savefig('Plots/ALNS.png')
