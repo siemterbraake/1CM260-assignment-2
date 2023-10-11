@@ -64,6 +64,7 @@ class TWO_E_CVRP:
         self.capacity_second = 50 
         self.cost_second = 25 
         self.cost_handling = 5 
+        self.range_second = 200
   
     def __str__(self):
         return f" 2E-CVRP problem {self.name} with {len(self.customerLoc)} customers "

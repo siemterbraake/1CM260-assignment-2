@@ -478,7 +478,7 @@ class Solution:
             if minCost > self.problem.cost_second:   
                 # create a new route with the customer
                 nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
+                iSat = self.problem.distMatrix[cust.ID][1:nSat].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
@@ -633,10 +633,12 @@ class Solution:
             if bestRegret[0][0] > self.problem.cost_second:
                 # Consider a new route with the customer
                 nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][:nSat].argmin()
+                iSat = self.problem.distMatrix[cust.ID][1:nSat].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
+                if newRoute.feasible == False:
+                    pass
                 newRoute.customers = {cust}	
                 if newRoute.cost < bestRegret[0][0]:
                     self.routes_2.append(newRoute)
