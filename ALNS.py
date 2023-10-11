@@ -213,8 +213,10 @@ class ALNS:
             self.tempSolution.executeGreedyInsertion(self.randomGen, False)
         elif repairHeuristicNr == 3:
             self.tempSolution.executeGreedyInsertion(self.randomGen, True)
-        else:
+        elif repairHeuristicNr == 4:
             self.tempSolution.executeRegretInsertion(self.randomGen, False)
+        else:
+            self.tempSolution.executeRegretInsertion(self.randomGen, True)
         tRepair = time.perf_counter()-startTime_repair
 
         #store average perform times (iterative expression)
