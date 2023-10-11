@@ -133,10 +133,7 @@ class ALNS:
             else:
                 score = 0
                 return score
-        # if we did not accept the new solution, we do not update the current solution
-        score = 0
-        return score
-    
+            
     def updateWeights(self, destroyOpNr: int, repairOpNr: int, score: int, decay: float = 0.99):
         """
         Method that updates the weights of the destroy and repair operators
