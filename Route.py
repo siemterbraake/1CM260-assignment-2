@@ -232,8 +232,8 @@ class Route:
         secondbestCost : the cost of the second best insertion
         """
         curCost = self.cost
-        bestCost = 1_000_000_000
-        secondbestCost = 1_000_000_000
+        bestCost = sys.maxsize
+        secondbestCost = sys.maxsize
         bestRoute = None
         # return None if empty is sent.
         if load <= 0:
