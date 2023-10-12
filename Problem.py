@@ -134,11 +134,11 @@ class ProblemSet:
         for instance in instanceList:
             self.problems.append(TWO_E_CVRP.readInstance(instance, dir))
     
-    def runALNS(self, nDestroyOps: int, nRepairOps: int):
+    def runALNS(self, nDestroyOps: int, nRepairOps: int, plotIntermediateSolutions: bool = False):
         """
         Method that runs the ALNS algorithm for each problem in the set
         """
         for problem in self.problems:
             alns = ALNS(problem, nDestroyOps, nRepairOps)
-            alns.execute()
+            alns.execute(plotIntermediateSolutions)
             print(alns.bestSolution)

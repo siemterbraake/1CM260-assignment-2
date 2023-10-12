@@ -9,6 +9,7 @@ from Location import Location
 from Customer import Customer
 from random import Random
 import numpy as np
+import sys
 
 
 class Solution:
@@ -466,12 +467,12 @@ class Solution:
                     if pertubation:
                         cost += cost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                 else:
-                    cost = float('inf')
+                    cost = sys.maxsize
                 costInsert.append(cost)
             
             # Find the route with the minimum cost and insert the customer
             if len(costInsert) == 0:
-                costInsert = [float('inf')]
+                costInsert = [sys.maxsize]
 
             # Find the minimum cost
             minCost = min(costInsert)
@@ -480,7 +481,7 @@ class Solution:
             if minCost > self.problem.cost_second:   
                 # create a new route with the customer
                 nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][1:nSat].argmin()
+                iSat = self.problem.distMatrix[cust.ID][1:nSat+1].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
@@ -576,23 +577,37 @@ class Solution:
             unservedSatID.remove(sat)
 
             # update the list with regret values for the new routes
-            satRegret = []
-            for sat in unservedSatID:
-                best = (1_000_000_000, 0)
-                secondBest = (1_000_000_000,0)
-                bestRoute = None
-                for iRoute, route in enumerate(self.routes_1):
-                    routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+            for iSat, sat in enumerate(unservedSatID):
+                if satRegret[iSat][0][1] == bestRegret[0][1] or satRegret[iSat][1][1] == bestRegret[0][1]:
+                # If either the best or second best route is the same as the one we just inserted the satellite in
+                # all routes must be reevaluated
+                    best = (sys.maxsize, 0)
+                    secondBest = (sys.maxsize,0)
+                    bestRoute = None
+                    for iRoute, route in enumerate(self.routes_1):
+                        routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+                        if pertubation:
+                            routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                            routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                        if routeBestCost < best[0]:
+                            secondBest = best
+                            best = (routeBestCost, iRoute)
+                            bestRoute = routeBest
+                        if routeSecondCost < secondBest[0]:
+                            secondBest = (routeSecondCost, iRoute)
+                    satRegret[iSat] = [best, secondBest, bestRoute]
+                else:
+                # Otherwise, only the inserted route must be reevaluated 
+                    routeBestCost, routeSecondCost, routeBest = self.routes_1[bestRegret[0][1]].findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
                     if pertubation:
                         routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                         routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
-                    if routeBestCost < best[0]:
-                        secondBest = best
-                        best = (routeBestCost, iRoute)
-                        bestRoute = routeBest
-                    if routeSecondCost < secondBest[0]:
-                        secondBest = (routeSecondCost, iRoute)
-                satRegret.append([best, secondBest, bestRoute])
+                    if routeBestCost < satRegret[iSat][0][1]:
+                        satRegret[iSat][1] = satRegret[iSat][0]
+                        satRegret[iSat][0] = (routeBestCost, bestRegret[0][1])
+                        satRegret[iSat][2] = routeBest
+                    if routeSecondCost < satRegret[iSat][1][1]:
+                        satRegret[iSat][1] = (routeSecondCost, bestRegret[0][1])
             
     def executeRegretInsertionSecond(self, randomGen: Random, pertubation: bool):
         """
@@ -607,8 +622,8 @@ class Solution:
         self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
 
         for cust in self.notServed:
-            best = (1_000_000_000, 0)
-            secondBest = (1_000_000_000,0)
+            best = (sys.maxsize, 0)
+            secondBest = (sys.maxsize,0)
             bestRoute = None
             for iRoute, route in enumerate(self.routes_2):
                 routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
@@ -622,7 +637,7 @@ class Solution:
                 if routeSecondCost < secondBest[0]:
                     secondBest = (routeSecondCost, iRoute)
             custRegret.append([best, secondBest, bestRoute])
-        
+
         # loop until all customers are served
         while len(self.notServed) > 0:
             # find the customer with the highest regret value
@@ -635,7 +650,7 @@ class Solution:
             if bestRegret[0][0] > self.problem.cost_second:
                 # Consider a new route with the customer
                 nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][1:nSat].argmin()
+                iSat = self.problem.distMatrix[cust.ID][1:nSat+1].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
@@ -658,24 +673,38 @@ class Solution:
             self.served.append(cust)
 
             # update the list with regret values for the new routes
-            #TODO: MAKE THIS MORE EFFICIENT
-            custRegret = []
-            for cust in self.notServed:
-                best = (1_000_000_000, 0)
-                secondBest = (1_000_000_000,0)
-                bestRoute = None
-                for iRoute, route in enumerate(self.routes_2):
-                    routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+            for iCust, cust in enumerate(self.notServed):
+                if custRegret[iCust][0][1] == bestRegret[0][1] or custRegret[iCust][1][1] == bestRegret[0][1]:
+                # If either the best or second best route is the same as the one we just inserted the customer in
+                # all routes must be reevaluated
+                    best = (sys.maxsize, 0)
+                    secondBest = (sys.maxsize,0)
+                    bestRoute = None
+                    for iRoute, route in enumerate(self.routes_2):
+                        routeBestCost, routeSecondCost, routeBest = route.findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
+                        if pertubation:
+                            routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                            routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
+                        if routeBestCost < best[0]:
+                            secondBest = best
+                            best = (routeBestCost, iRoute)
+                            bestRoute = routeBest
+                        if routeSecondCost < secondBest[0]:
+                            secondBest = (routeSecondCost, iRoute)
+                    custRegret[iCust] = [best, secondBest, bestRoute]
+                else:
+                    # Otherwise, only the inserted route must be reevaluated 
+                    routeBestCost, routeSecondCost, routeBest = self.routes_2[bestRegret[0][1]].findRegret(cust.deliveryLoc, cust.deliveryLoc.demand)
                     if pertubation:
                         routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                         routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
-                    if routeBestCost < best[0]:
-                        secondBest = best
-                        best = (routeBestCost, iRoute)
-                        bestRoute = routeBest
-                    if routeSecondCost < secondBest[0]:
-                        secondBest = (routeSecondCost, iRoute)
-                custRegret.append([best, secondBest, bestRoute])
+                    if routeBestCost < custRegret[iCust][0][0]:
+                        custRegret[iCust][1] = custRegret[iCust][0]
+                        custRegret[iCust][0] = (routeBestCost, bestRegret[0][1])
+                        custRegret[iCust][2] = routeBest
+                    if routeSecondCost < custRegret[iCust][1][0]:
+                        custRegret[iCust][1] = (routeSecondCost, bestRegret[0][1])
+
 
     def plotRoutes(self, name: str):
         """
@@ -707,4 +736,5 @@ class Solution:
             
 
         fig.savefig(f"Plots/{name}")
+        plt.close(fig)
 
