@@ -248,12 +248,13 @@ class Solution:
         """
         # number of satellites
         nSat = len(self.problem.satellites)
+        nD = len(self.problem.depots)
         self.satDemandNotServed = [0 for i in range(nSat)]
         # Find total demand for each satellite from the second echelon routes          
         for i in self.routes_2:       
             sat = i.locations[0]
             totalDemand = sum(j.demand for j in i.locations)
-            self.satDemandNotServed[sat.nodeID - 1] += totalDemand
+            self.satDemandNotServed[sat.nodeID - nD] += totalDemand
 
     def executeRandomInsertion(self, randomGen: Random):
         """
@@ -297,7 +298,7 @@ class Solution:
             load_max = 0
             while load_max == 0:
                 load_max = randomGen.choice(self.satDemandNotServed)
-            sat_ID = self.satDemandNotServed.index(load_max)
+            iSat = self.satDemandNotServed.index(load_max)
             # keep track of routes in which this load could be inserted
             potentialRoutes = self.routes_1.copy()
             # potentialRoutes = copy.deepcopy(self.routes_1)
@@ -311,7 +312,7 @@ class Solution:
                 else:
                      load = load_max
                 afterInsertion = randomRoute.greedyInsert(
-                    self.problem.satellites[sat_ID], load)
+                    self.problem.satellites[iSat], load)
                 if afterInsertion == None:
                     # insertion not feasible, remove route from potential routes
                     potentialRoutes.remove(randomRoute)
@@ -324,8 +325,9 @@ class Solution:
             # if we were not able to insert, create a new route
             if not inserted:
                 # create a new route with the load
-                depot = self.problem.depot
-                locList = [depot, self.problem.satellites[sat_ID], depot]
+                nDepot = len(self.problem.depots)
+                iDepot = self.problem.distMatrix[nDepot+iSat][:nDepot].argmin()
+                locList = [self.problem.depots[iDepot], self.problem.satellites[iSat], self.problem.depots[iDepot]]
                 remain_load = self.problem.capacity_first 
                 if load_max > remain_load:
                      load = remain_load
@@ -335,8 +337,8 @@ class Solution:
                 # update the demand
                 self.routes_1.append(newRoute)
             # update the lists with served and notServed customers
-            self.satDemandNotServed[sat_ID] -= load
-            self.satDemandServed[sat_ID] += load
+            self.satDemandNotServed[iSat] -= load
+            self.satDemandServed[iSat] += load
 
     def executeRandomInsertionSecond(self, randomGen: Random):
         """
@@ -401,54 +403,59 @@ class Solution:
         # Determine the first echelon from the given-second echelon routes
         # This is used to reset the existing first-echelon route.
         self.routes_1 = []
+        nD = len(self.problem.depots)
         # Derive demands for satellites
         self.computeDemandSatellites()
         # Create list of unserved satellites
-        unservedSatID = [i+1 for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
-        # Initialize iterative process
-        curCity = 0 # depot
+        unservedSatID = [i+nD for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
+        # Initialize iterative process, find depot nearest to a satellite
+        iMinDist = self.problem.distMatrix[:nD,unservedSatID].argmin()
+        curLoc = (iMinDist + 1) // nD 
         full = True # this causes a new route to be created
         while len(unservedSatID) > 0:
-            # Find the satellite nearest to the current city
-            curCity = self.problem.distMatrix[curCity][unservedSatID].argmin()
+            # Find the satellite nearest to the current location
+            curLoc = self.problem.distMatrix[curLoc][unservedSatID].argmin()
             # Find the satellite ID
-            curCity = unservedSatID[curCity]
+            curLoc = unservedSatID[curLoc]
             if full:
                 # initialize a new route
-                depot = self.problem.depot
-                locList = [depot, self.problem.satellites[curCity-1], depot]
+                iDepot = self.problem.distMatrix[:nD,curLoc].argmin()
+                depot = self.problem.depots[iDepot]
+                locList = [depot, self.problem.satellites[curLoc-nD], depot]
                 remain_load = self.problem.capacity_first 
-                if self.satDemandNotServed[curCity-1] > remain_load:
+                if self.satDemandNotServed[curLoc-nD] > remain_load:
                     load = remain_load
                 else:
-                    load = self.satDemandNotServed[curCity-1]
-                    unservedSatID.remove(curCity)
+                    load = self.satDemandNotServed[curLoc-nD]
+                    unservedSatID.remove(curLoc)
                     full = False
                 curRoute = Route(locList, self.problem, True, [load])
                 self.routes_1.append(curRoute)
                 # update the demand
-                self.satDemandNotServed[curCity-1] -= load
-                self.satDemandServed[curCity-1] += load
+                self.satDemandNotServed[curLoc-nD] -= load
+                self.satDemandServed[curLoc-nD] += load
             else:
                 # add the satellite to the current route
                 curRoute = self.routes_1[-1]
-                load = self.satDemandNotServed[curCity-1]
+                load = self.satDemandNotServed[curLoc-nD]
                 afterInsertion = curRoute.insertLocation(
-                    self.problem.satellites[curCity-1], load, len(curRoute.locations))
+                    self.problem.satellites[curLoc-nD], load, len(curRoute.locations))
                 if afterInsertion == None:
                     full = True
                 else:
-                    unservedSatID.remove(curCity)
+                    unservedSatID.remove(curLoc)
                     self.routes_1.append(afterInsertion)
                     # update the demand
-                    self.satDemandNotServed[curCity-1] -= load
-                    self.satDemandServed[curCity-1] += load 
+                    self.satDemandNotServed[curLoc-nD] -= load
+                    self.satDemandServed[curLoc-nD] += load 
 
     def executeGreedyInsertionSecond(self, randomGen: Random, pertubation: bool):
         """
         Method that performs Greedy insertion to construct the second-level routes
         """
 
+        nSat = len(self.problem.satellites)
+        nD = len(self.problem.depots)
         # Remove the empty routes from routes_2
         self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
 
@@ -480,8 +487,7 @@ class Solution:
             # If the cost is higher than the cost of opening a new rout, consider a new route
             if minCost > self.problem.cost_second:   
                 # create a new route with the customer
-                nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][1:nSat+1].argmin()
+                iSat = self.problem.distMatrix[cust.ID][nD:nD+nSat].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
@@ -525,44 +531,31 @@ class Solution:
         # Derive demands for satellites
         self.computeDemandSatellites()
         # Create list of unserved satellites
-        unservedSatID = [i+1 for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
+        nD = len(self.problem.depots)
+        unservedSatID = [i+nD for i in range(len(self.satDemandNotServed)) if self.satDemandNotServed[i] > 0]
 
-        # Find regret values for all unserved satellites
-        satRegret = []
-        for sat in unservedSatID:
-            best = (1_000_000_000, 0)
-            secondBest = (1_000_000_000,0)
-            bestRoute = None
-            for iRoute, route in enumerate(self.routes_1):
-                routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
-                if pertubation:
-                    routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
-                    routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
-                if routeBestCost < best[0]:
-                    secondBest = best
-                    best = (routeBestCost, iRoute)
-                    bestRoute = routeBest
-                if routeSecondCost < secondBest[0]:
-                    secondBest = (routeSecondCost, iRoute)
-            satRegret.append([best, secondBest, bestRoute])
+        # Init regret values for all unserved satellites, no routes so all routes are bad
+        best = (sys.maxsize, 0)
+        secondBest = (sys.maxsize,0)
+        bestRoute = None
+        satRegret = [[best, secondBest, bestRoute]]*len(unservedSatID)
         
-        # find the satellite with the highest regret value
         while len(unservedSatID) > 0:
-            # find the customer with the highest regret value
+            # find the satellite with the highest regret value
             idxBestRegret = satRegret.index(max(satRegret, key=lambda x: x[1][0]-x[0][0]))
             bestRegret = satRegret.pop(idxBestRegret)
-            # pick the satellite with the highest regret value
-            sat = unservedSatID[idxBestRegret]
+            satID = unservedSatID[idxBestRegret]
             inserted = False
 
             if bestRegret[0][0] > self.problem.cost_first:
                 # Consider a new route with the satellite
-                depot = self.problem.depot
-                locList = [depot, self.problem.satellites[sat-1], depot]
-                if self.satDemandNotServed[sat-1] > self.problem.capacity_first:
+                nDepot = len(self.problem.depots)
+                iDepot = self.problem.distMatrix[nDepot+satID][:nDepot].argmin()
+                locList = [self.problem.depots[iDepot], self.problem.satellites[satID-nD], self.problem.depots[iDepot]]
+                if self.satDemandNotServed[satID-nD] > self.problem.capacity_first:
                     load = self.problem.capacity_first
                 else:
-                    load = self.satDemandNotServed[sat-1]
+                    load = self.satDemandNotServed[satID-nD]
                 newRoute = Route(locList, self.problem, True, [load])
                 if newRoute.cost < bestRegret[0][0]:
                     self.routes_1.append(newRoute)
@@ -574,18 +567,18 @@ class Solution:
                 self.routes_1[bestRegret[0][1]] = bestRegret[2]
             
             # remove the satellite from the list of unserved satellites
-            unservedSatID.remove(sat)
+            unservedSatID.remove(satID)
 
             # update the list with regret values for the new routes
-            for iSat, sat in enumerate(unservedSatID):
-                if satRegret[iSat][0][1] == bestRegret[0][1] or satRegret[iSat][1][1] == bestRegret[0][1]:
+            for i, satID in enumerate(unservedSatID):
+                if satRegret[i][0][1] == bestRegret[0][1] or satRegret[i][1][1] == bestRegret[0][1]:
                 # If either the best or second best route is the same as the one we just inserted the satellite in
                 # all routes must be reevaluated
                     best = (sys.maxsize, 0)
                     secondBest = (sys.maxsize,0)
                     bestRoute = None
                     for iRoute, route in enumerate(self.routes_1):
-                        routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+                        routeBestCost, routeSecondCost, routeBest = route.findRegret(self.problem.satellites[satID-nD], self.satDemandNotServed[satID-nD])
                         if pertubation:
                             routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                             routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
@@ -595,19 +588,19 @@ class Solution:
                             bestRoute = routeBest
                         if routeSecondCost < secondBest[0]:
                             secondBest = (routeSecondCost, iRoute)
-                    satRegret[iSat] = [best, secondBest, bestRoute]
+                    satRegret[i] = [best, secondBest, bestRoute]
                 else:
                 # Otherwise, only the inserted route must be reevaluated 
-                    routeBestCost, routeSecondCost, routeBest = self.routes_1[bestRegret[0][1]].findRegret(self.problem.satellites[sat-1], self.satDemandNotServed[sat-1])
+                    routeBestCost, routeSecondCost, routeBest = self.routes_1[bestRegret[0][1]].findRegret(self.problem.satellites[satID-nD], self.satDemandNotServed[satID-nD])
                     if pertubation:
                         routeBestCost += routeBestCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
                         routeSecondCost += routeSecondCost*pow(randomGen.random(),randomGen.uniform(-0.2, 0.2))
-                    if routeBestCost < satRegret[iSat][0][1]:
-                        satRegret[iSat][1] = satRegret[iSat][0]
-                        satRegret[iSat][0] = (routeBestCost, bestRegret[0][1])
-                        satRegret[iSat][2] = routeBest
-                    if routeSecondCost < satRegret[iSat][1][1]:
-                        satRegret[iSat][1] = (routeSecondCost, bestRegret[0][1])
+                    if routeBestCost < satRegret[i][0][1]:
+                        satRegret[i][1] = satRegret[i][0]
+                        satRegret[i][0] = (routeBestCost, bestRegret[0][1])
+                        satRegret[i][2] = routeBest
+                    if routeSecondCost < satRegret[i][1][1]:
+                        satRegret[i][1] = (routeSecondCost, bestRegret[0][1])
             
     def executeRegretInsertionSecond(self, randomGen: Random, pertubation: bool):
         """
@@ -617,6 +610,8 @@ class Solution:
         """
         # determine regret values for all unserved customers
         custRegret = []
+        nSat = len(self.problem.satellites)
+        nD = len(self.problem.depots)
 
         # remove the empty routes from routes_2
         self.routes_2 = [route for route in self.routes_2 if len(route.locations) > 2]
@@ -649,8 +644,7 @@ class Solution:
 
             if bestRegret[0][0] > self.problem.cost_second:
                 # Consider a new route with the customer
-                nSat = len(self.problem.satellites)
-                iSat = self.problem.distMatrix[cust.ID][1:nSat+1].argmin()
+                iSat = self.problem.distMatrix[cust.ID][nD:nSat+nD].argmin()
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
@@ -722,9 +716,10 @@ class Solution:
             for i in range(len(route.locations)-1):
                 plt.plot([route.locations[i].xLoc,route.locations[i+1].xLoc],
                          [route.locations[i].yLoc,route.locations[i+1].yLoc],'r')
-        # plot the depot
-        plt.plot(self.problem.depot.xLoc,self.problem.depot.yLoc,'ko')
-        plt.annotate(0, (self.problem.depot.xLoc, self.problem.depot.yLoc))
+        # plot the depots
+        for i in self.problem.depots:
+            plt.plot(i.xLoc,i.yLoc,'ko')
+            plt.annotate(i.nodeID, (i.xLoc, i.yLoc))
         # plot the customers
         for i in self.problem.customers:
             plt.plot(i.deliveryLoc.xLoc,i.deliveryLoc.yLoc,'bo')

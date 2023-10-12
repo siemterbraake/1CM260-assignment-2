@@ -98,7 +98,7 @@ class Route:
         Method that checks feasbility. Returns True if feasible, else False
         """
         if self.isFirstEchelonRoute is True:
-            start = [self.problem.depot.nodeID]
+            start = [i.nodeID for i in self.problem.depots]
             capacity = self.problem.capacity_first
 
         else:
