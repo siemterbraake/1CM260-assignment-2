@@ -17,7 +17,7 @@ class TWO_E_CVRP:
     name : name of the instance.
     customers : The set containing all customers.
     customerLoc: the list of all customer locations
-    depot : the depot where all the first-echelon vehicles must start and end.
+    depots : the set of depots where all the first-echelon vehicles must start and end.
     satellites : the satellites where all the second-echelon vehicles must start and end.
     locations : the set containing all locations: a depot, satellites and customers.
     distMatrix : matrix with all distances between locations
@@ -30,13 +30,16 @@ class TWO_E_CVRP:
     def __init__(self,name: str, customers: list[Customer], customerLoc: list[Location], depots: list[Location], satellites: list[Location]):
         self.name = name
         self.customerLoc = customerLoc
-        self.depot = depots[0]
+        self.depots = depots
         self.satellites = satellites
         self.customers = customers
         #construct the set for all location
         self.locations = set()
-        self.locations.add(self.depot)
-        count = 1
+        count = 0
+        for d in self.depots:
+            d.nodeID = count
+            self.locations.add(d)
+            count+=1
         for s in self.satellites:
             s.nodeID = count
             self.locations.add(s)
@@ -46,12 +49,15 @@ class TWO_E_CVRP:
             self.locations.add(c)
             count+=1
         #compute the distance matrix 
+        nD = len(self.depots)
+        nS = len(self.satellites)
+        nC = len(self.customerLoc)
         self.distMatrix = np.zeros((len(self.locations),len(self.locations))) #init as nxn matrix
         for i in self.locations:
             for j in self.locations:
                 # No connection between Depot and customers
-                case_1 = i.nodeID == 0 and j.nodeID > len(self.satellites)
-                case_2 = i.nodeID > len(self.satellites) and j.nodeID == 0
+                case_1 = i.nodeID < nD and j.nodeID >= nD + nS
+                case_2 = i.nodeID > nD + nS and j.nodeID < nD
                 if case_1 or case_2 :
                     distItoJ = sys.maxsize
                 else:
@@ -65,6 +71,8 @@ class TWO_E_CVRP:
         self.cost_second = 25 
         self.cost_handling = 5 
         self.range_second = 200
+
+        print(self.distMatrix)
   
     def __str__(self):
         return f" 2E-CVRP problem {self.name} with {len(self.customerLoc)} customers "
@@ -72,17 +80,20 @@ class TWO_E_CVRP:
     def readInstance(fileName: str, dir: str = "Must") -> "TWO_E_CVRP":
         # Read filename
         instance_name = fileName[:-4]
+        n_depots = int(instance_name[4])
         n_satellites = int(instance_name[6])
         n_customers = int(instance_name[8:])
+        n_locations = n_depots + n_satellites + n_customers 
         f = open(f"Instances/{dir}/{fileName}")
 
         n_line = 0  # count number of line
-        nodeCount = 1  # count number of nodes
+        nodeID = 0  # init at 0 for all locations, updated later
+        custID = n_depots + n_satellites  # init at n_depots + n_satellites for all customers, updated later
         customerLoc = []  # store customers-location object
-        depot = []  # store the depot location object
+        depots = []  # store the depot location object
         satellites = []  # store the satellite location object
         customers = []  # store customers object 
-        for line in f.readlines()[:-1]:
+        for line in f.readlines():
             asList = []
             n = 6
             for index in range(0, len(line), n):
@@ -96,31 +107,26 @@ class TWO_E_CVRP:
                     demand = int(asList[4])
                     servTime = int(asList[5])
                     typeLoc = -1
-                    # This is to renumber the customer ID
-                    nodeID = nodeCount + n_satellites
                     customerLoc.append(
                         Location(x, y, demand, servTime, typeLoc, nodeID))
                     cust = Customer(
-                        Location(x, y, demand, servTime, typeLoc, nodeID), nodeID)
-                    nodeCount += 1
+                        Location(x, y, demand, servTime, typeLoc, custID), custID)
                     customers.append(cust)
+                    custID += 1
                 elif n_line >= n_customers and n_line < n_customers + n_satellites:  # For satellites
                     demand = 0
                     servTime = int(asList[2])
                     typeLoc = 1
-                    nodeID = nodeCount
-                    nodeCount += 1
                     satellites.append(
                         Location(x, y, demand, servTime, typeLoc, nodeID))
-                elif n_line == n_customers + n_satellites:  # 1 Depot
+                elif n_line >= n_customers + n_satellites:  # Multiple Depots
                     demand = 0
                     servTime = int(asList[2])
                     typeLoc = 0
-                    nodeID = 0
-                    depot.append(
+                    depots.append(
                         Location(x, y, demand, servTime, typeLoc, nodeID))
                 n_line += 1
-        return TWO_E_CVRP(fileName, customers, customerLoc, depot, satellites)
+        return TWO_E_CVRP(fileName, customers, customerLoc, depots, satellites)
 
 class ProblemSet:
     """
