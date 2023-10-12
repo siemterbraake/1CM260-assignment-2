@@ -366,7 +366,7 @@ class Solution:
                     # insertion feasible, update routes and break from while loop
                     inserted = True
                     afterInsertion.customers = randomRoute.customers
-                    afterInsertion.customers.add(cust)
+                    afterInsertion.customers.append(cust)
                     self.routes_2.remove(randomRoute)
                     self.routes_2.append(afterInsertion)
                     break
@@ -377,7 +377,7 @@ class Solution:
                 sat = randomGen.choice(self.problem.satellites)
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
-                newRoute.customers = {cust}
+                newRoute.customers = [cust]
                 self.routes_2.append(newRoute)
             # update the lists with served and notServed customers
             self.served.append(cust)
@@ -485,7 +485,7 @@ class Solution:
                 sat = self.problem.satellites[iSat]
                 locList = [sat, cust.deliveryLoc, sat]
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
-                newRoute.customers = {cust}	
+                newRoute.customers = [cust]	
                 if newRoute.cost < minCost:
                     self.routes_2.append(newRoute)
                     inserted = True
@@ -495,7 +495,7 @@ class Solution:
                 afterInsertion = self.routes_2[iInsert].greedyInsert(
                     cust.deliveryLoc, cust.deliveryLoc.demand)
                 afterInsertion.customers = self.routes_2[iInsert].customers
-                afterInsertion.customers.add(cust)      
+                afterInsertion.customers.append(cust)      
                 self.routes_2[iInsert] = afterInsertion              
             # update the lists with served and notServed customers
             self.served.append(cust)
@@ -656,7 +656,7 @@ class Solution:
                 newRoute = Route(locList, self.problem, False, [cust.deliveryLoc.demand])
                 if newRoute.feasible == False:
                     pass
-                newRoute.customers = {cust}	
+                newRoute.customers = [cust]	
                 if newRoute.cost < bestRegret[0][0]:
                     self.routes_2.append(newRoute)
                     inserted = True
@@ -665,7 +665,7 @@ class Solution:
             if not inserted:
                 # insert the customer in the best route
                 bestRegret[2].customers = self.routes_2[bestRegret[0][1]].customers
-                bestRegret[2].customers.add(cust)
+                bestRegret[2].customers.append(cust)
                 self.routes_2[bestRegret[0][1]] = bestRegret[2]
             
             # remove the customer from the list of unserved customers
