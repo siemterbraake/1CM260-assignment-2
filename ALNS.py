@@ -243,11 +243,10 @@ class ALNS:
         """
         Method that plots the solution trend
         """
-        plt.figure()
         plt.plot(self.currentSolutionTrend, label='Current Solution')
         plt.plot(self.bestSolutionTrend, label='Best Solution')
         plt.ylabel('Cost')
         plt.xlabel('Iteration')
-        plt.savefig('Plots/ALNS.png')
         plt.legend()
+        plt.savefig('Plots/ALNS.png')
         plt.close()
