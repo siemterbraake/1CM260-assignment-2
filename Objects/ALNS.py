@@ -40,10 +40,11 @@ class ALNS:
     bestCost : Cost of the best solution
 
     """
-    def __init__(self,problem, nDestroyOps: int, nRepairOps: int):
+    def __init__(self,problem, nDestroyOps: int, nRepairOps: int, verbose: bool = False):
         self.problem = problem
         self.nDestroyOps = nDestroyOps
         self.nRepairOps = nRepairOps
+        self.verbose = verbose
         self.wDestroyOps = [1]*nDestroyOps #initially all destroy operators have weight 1
         self.tDestroyOps = [0]*nDestroyOps #initially all destroy operators have time 0
         self.nUsedDestroyOps = [0]*nDestroyOps #initially all destroy operators are used 0 times
@@ -68,7 +69,8 @@ class ALNS:
         self.bestSolution = copy.deepcopy(self.currentSolution)
         self.bestCost = self.currentSolution.cost
         self.solutionTrend.append(self.bestCost)
-        print("Created initial solution with cost: "+str(self.bestCost))
+        if self.verbose:
+            print("Created initial solution with cost: "+str(self.bestCost))
         
     def execute(self, plotIntermediateSolutions: bool = False):
         """
@@ -89,7 +91,8 @@ class ALNS:
             self.destroyAndRepair(destroyOpNr, repairOpNr, sizeNBH)
             # Determine the first echelon route using the Greedy insertion
             self.tempSolution.computeCost()
-            print(f"Iteration {i}: Found solution with cost: {self.tempSolution.cost}")
+            if self.verbose:
+                print(f"Iteration {i}: Found solution with cost: {self.tempSolution.cost}")
             #determine if the new solution is accepted
             score = self.checkIfAcceptNewSol(i, destroyOpNr, repairOpNr, plotIntermediateSolutions)
             #update the ALNS weights
@@ -102,10 +105,11 @@ class ALNS:
             self.currentSolutionTrend.append(self.currentSolution.cost)
             self.bestSolutionTrend.append(self.bestSolution.cost)
 
-            if self.tempSolution.cost > 1.75*self.bestSolution.cost:
-                print(f"Very bad solution found. Destory operator: {destroyOpNr}, repair operator: {repairOpNr}")
-                if plotIntermediateSolutions:
-                    self.tempSolution.plotRoutes(f"ALNS Iteration {i}")              
+            if self.verbose:
+                if self.tempSolution.cost > 1.75*self.bestSolution.cost:
+                    print(f"Very bad solution found. Destory operator: {destroyOpNr}, repair operator: {repairOpNr}")
+                    if plotIntermediateSolutions:
+                        self.tempSolution.plotRoutes(f"ALNS Iteration {i}")              
 
         endtime = time.time() # get the end time
         cpuTime = round(endtime-starttime)
@@ -130,7 +134,8 @@ class ALNS:
             self.bestCost = self.tempSolution.cost
             self.bestSolution = copy.deepcopy(self.tempSolution)
             self.currentSolution = copy.deepcopy(self.tempSolution)
-            print(f"Found new global best solution using destroy operator {destroyOpNr} and repair operator {repairOpNr}")
+            if self.verbose:
+                print(f"Found new global best solution using destroy operator {destroyOpNr} and repair operator {repairOpNr}")
             score = 2
             Parameters.T = Parameters.Cool*Parameters.T
 

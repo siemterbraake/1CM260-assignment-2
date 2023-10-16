@@ -72,8 +72,6 @@ class TWO_E_CVRP:
         self.cost_second = 25 
         self.cost_handling = 5 
         self.range_second = 200
-
-        print(self.distMatrix)
   
     def __str__(self):
         return f" 2E-CVRP problem {self.name} with {len(self.customerLoc)} customers "
@@ -142,12 +140,12 @@ class ProblemSet:
         for instance in instanceList:
             self.problems.append(TWO_E_CVRP.readInstance(instance, dir))
     
-    def runALNS(self, nDestroyOps: int, nRepairOps: int, plotIntermediateSolutions: bool = False):
+    def runALNS(self, nDestroyOps: int, nRepairOps: int, plotIntermediateSolutions: bool = False, verbose: bool = False):
         """
         Method that runs the ALNS algorithm for each problem in the set
         """
         for problem in self.problems:
-            self.alns.append(ALNS(problem, nDestroyOps, nRepairOps))
+            self.alns.append(ALNS(problem, nDestroyOps, nRepairOps, verbose))
             self.alns[-1].execute(plotIntermediateSolutions)
     
     def plotResults(self):

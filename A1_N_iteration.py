@@ -11,5 +11,5 @@ if __name__ == "__main__":
     nDestroyOps = 4
     nRepairOps = 5
     problemSet = ProblemSet(instanceList)
-    problemSet.runALNS(nDestroyOps, nRepairOps, plotIntermediateSolutions=False)
+    problemSet.runALNS(nDestroyOps, nRepairOps, plotIntermediateSolutions=False, verbose = False)
     problemSet.plotResults()
