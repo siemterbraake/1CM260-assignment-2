@@ -3,7 +3,7 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 import matplotlib.pyplot as plt
-from Solution import Solution
+from Objects.Solution import Solution
 from random import Random
 import copy
 import time
@@ -14,9 +14,8 @@ class Parameters:
     """
     Class that holds all the parameters for ALNS
     """
-    nIterations = 1000  # number of iterations of the ALNS
+    nIterations = 1500  # number of iterations of the ALNS
     minSizeNBH = 1  # minimum neighborhood size
-    maxSizeNBH = 20  # maximum neighborhood size
     randomSeed = 1  # value of the random seed
     T = 40 # Temperature for Simulated Annealing
     Cool = 0.99 # Cooling rate
@@ -82,7 +81,7 @@ class ALNS:
             #copy the current solution
             self.tempSolution = copy.deepcopy(self.currentSolution)
             #decide on the size of the neighbourhood
-            sizeNBH = self.randomGen.randint(Parameters.minSizeNBH,Parameters.maxSizeNBH)
+            sizeNBH = self.randomGen.randint(Parameters.minSizeNBH,len(self.problem.locations)//2)
             #decide on the destroy and repair operator numbers
             destroyOpNr = self.determineDestroyOpNr()
             repairOpNr = self.determineRepairOpNr()
@@ -243,6 +242,7 @@ class ALNS:
         """
         Method that plots the solution trend
         """
+        plt.figure(figsize=(3,2))
         plt.plot(self.currentSolutionTrend, label='Current Solution')
         plt.plot(self.bestSolutionTrend, label='Best Solution')
         plt.ylabel('Cost')

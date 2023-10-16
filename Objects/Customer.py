@@ -1,4 +1,4 @@
-from Location import Location
+from Objects.Location import Location
 
 class Customer:
     """

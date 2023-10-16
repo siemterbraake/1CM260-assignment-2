@@ -4,7 +4,7 @@
 """
 from copy import deepcopy
 import sys
-from Location import Location
+from Objects.Location import Location
 
 class Route:
     """

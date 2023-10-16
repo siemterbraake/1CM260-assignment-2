@@ -3,8 +3,8 @@
 @author: Original template by Rolf van Lieshout and Krissada Tundulyasaree
 """
 
-from Problem import ProblemSet
-from Setup import instanceList
+from Objects.Problem import ProblemSet
+from Objects.Setup import instanceList
 
 if __name__ == "__main__":
     nDestroyOps = 4

@@ -4,9 +4,9 @@
 """
 import matplotlib.pyplot as plt
 from copy import deepcopy
-from Route import Route
-from Location import Location
-from Customer import Customer
+from Objects.Route import Route
+from Objects.Location import Location
+from Objects.Customer import Customer
 from random import Random
 import numpy as np
 import sys
@@ -198,7 +198,8 @@ class Solution:
             cost_with = Location.getDistance(from_loc, k)+Location.getDistance(k, to_loc)
             cost_without = Location.getDistance(from_loc,to_loc)
             avg_cost = cost_with/2 #To normalize the cost
-            cost = (cost_with-cost_without)/avg_cost
+            if avg_cost != 0:
+                cost = (cost_with-cost_without)/avg_cost
             if pertubation:
                 cost += cost*pow(random.random(),random.uniform(-0.2, 0.2))
             if cost < removing_max:

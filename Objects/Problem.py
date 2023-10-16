@@ -5,9 +5,10 @@
 
 import numpy as np
 import sys
-from ALNS import ALNS
-from Customer import Customer
-from Location import Location
+from Objects.ALNS import ALNS
+from Objects.Customer import Customer
+from Objects.Location import Location
+import matplotlib.pyplot as plt
         
 class TWO_E_CVRP: 
     """
@@ -137,6 +138,7 @@ class ProblemSet:
     """
     def __init__(self, instanceList: list[str], dir: str = "Must"):
         self.problems = list()
+        self.alns = list()
         for instance in instanceList:
             self.problems.append(TWO_E_CVRP.readInstance(instance, dir))
     
@@ -145,6 +147,17 @@ class ProblemSet:
         Method that runs the ALNS algorithm for each problem in the set
         """
         for problem in self.problems:
-            alns = ALNS(problem, nDestroyOps, nRepairOps)
-            alns.execute(plotIntermediateSolutions)
-            print(alns.bestSolution)
+            self.alns.append(ALNS(problem, nDestroyOps, nRepairOps))
+            self.alns[-1].execute(plotIntermediateSolutions)
+    
+    def plotResults(self):
+        """
+        Method that runs 
+        """
+        plt.figure(figsize=(6,4))
+        for alns in self.alns:
+            plt.plot(alns.bestSolutionTrend, label=alns.problem.name[:-4])
+        plt.xlabel("Iteration")
+        plt.ylabel("Best solution") 
+        plt.legend()
+        plt.savefig("Plots/ALNS_iterations.png", dpi=300)
