@@ -14,10 +14,10 @@ class Parameters:
     """
     Class that holds all the parameters for ALNS
     """
-    nIterations = 1500  # number of iterations of the ALNS
+    nIterations = 500  # number of iterations of the ALNS
     minSizeNBH = 1  # minimum neighborhood size
     randomSeed = 1  # value of the random seed
-    T = 40 # Temperature for Simulated Annealing
+    T = 100 # Temperature for Simulated Annealing
     Cool = 0.99 # Cooling rate
     # can add parameters such as cooling rate etc.
 
@@ -56,6 +56,7 @@ class ALNS:
         self.solutionTrend = list() #list that stores the best solution found at each iteration
         self.currentSolutionTrend = list() #list that stores the current solution found at each iteration
         self.bestSolutionTrend = list() #list that stores the best solution found at each iteration
+        self.wRepairOpsTrend = [list() for _ in range(nRepairOps)] #list that stores the weights of the repair operators at each iteration
         
     def constructInitialSolution(self):
         """
@@ -114,6 +115,7 @@ class ALNS:
         endtime = time.time() # get the end time
         cpuTime = round(endtime-starttime)
         self.plotSolutionTrend()
+        self.PlotRepairTrend()
         self.bestSolution.plotRoutes("ALNS Best Solution")
 
         print("Terminated. Final cost: "+str(self.bestSolution.cost)+", cpuTime: "+str(cpuTime)+" seconds")
@@ -167,6 +169,9 @@ class ALNS:
         self.wDestroyOps = [i/sum(self.wDestroyOps) for i in self.wDestroyOps] #normalize the weights
         self.wRepairOps = [i/sum(self.wRepairOps) for i in self.wRepairOps] #normalize the weights
 
+        for i in range(self.nRepairOps):
+            self.wRepairOpsTrend[i].append(self.wRepairOps[i])
+
     
     def determineDestroyOpNr(self) -> int:
         """
@@ -214,11 +219,11 @@ class ALNS:
         if destroyHeuristicNr == 1:
             self.tempSolution.executeRandomRemoval(sizeNBH,self.randomGen, False)
         elif destroyHeuristicNr == 2:
-            self.tempSolution.executeRelatedRemoval(sizeNBH,self.randomGen, False)
-        elif destroyHeuristicNr == 3:
             self.tempSolution.executeWorstRemoval(sizeNBH,self.randomGen, False, False)
-        else:
+        elif destroyHeuristicNr == 3:
             self.tempSolution.executeWorstRemoval(sizeNBH, self.randomGen, False, True)
+        else: # SHOWS POOR PERFORMANCE, NOT USED
+            self.tempSolution.executeRelatedRemoval(sizeNBH,self.randomGen, False)
         tDestroy = time.perf_counter()-startTime_destroy
 
         #perform the repair
@@ -226,13 +231,14 @@ class ALNS:
         if repairHeuristicNr == 1:
             self.tempSolution.executeRandomInsertion(self.randomGen)
         elif repairHeuristicNr == 2:
-            self.tempSolution.executeGreedyInsertion(self.randomGen, False)
-        elif repairHeuristicNr == 3:
             self.tempSolution.executeGreedyInsertion(self.randomGen, True)
-        elif repairHeuristicNr == 4:
-            self.tempSolution.executeRegretInsertion(self.randomGen, False)
-        else:
+        elif repairHeuristicNr == 3:
             self.tempSolution.executeRegretInsertion(self.randomGen, True)
+        elif repairHeuristicNr == 4: # SHOWS POOR PERFORMANCE, NOT USED
+            self.tempSolution.executeRegretInsertion(self.randomGen, False)
+        else: # SHOWS POOR PERFORMANCE, NOT USED
+            self.tempSolution.executeGreedyInsertion(self.randomGen, False)
+            
         tRepair = time.perf_counter()-startTime_repair
 
         #store average perform times (iterative expression)
@@ -247,11 +253,27 @@ class ALNS:
         """
         Method that plots the solution trend
         """
-        plt.figure(figsize=(3,2))
+        plt.figure(figsize=(4,3))
         plt.plot(self.currentSolutionTrend, label='Current Solution')
         plt.plot(self.bestSolutionTrend, label='Best Solution')
         plt.ylabel('Cost')
         plt.xlabel('Iteration')
         plt.legend()
+        plt.tight_layout()
         plt.savefig('Plots/ALNS.png')
         plt.close()
+
+    def PlotRepairTrend(self):
+        """
+        Method that plots the repair weight trend
+        """
+        plt.figure(figsize=(4,3))
+        for i in range(self.nRepairOps):
+            plt.plot(self.wRepairOpsTrend[i], label=f'Repair Operator {i+1}')
+        plt.ylabel('Weight')
+        plt.xlabel('Iteration')
+        plt.legend(loc="upper right", prop = { "size": 8})
+        plt.tight_layout()
+        plt.savefig('Plots/RepairOps.png')
+        plt.close()
+
